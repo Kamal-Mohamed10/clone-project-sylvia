@@ -6,9 +6,11 @@ CREATE TABLE IF NOT EXISTS events (
   title        TEXT NOT NULL,
   description  TEXT NOT NULL DEFAULT '',
   start_date   DATE NOT NULL,
+  end_date     DATE,
   start_time   TEXT NOT NULL,
   end_time     TEXT,
   day_label    TEXT NOT NULL,
+  recurrence_type TEXT NOT NULL DEFAULT 'Does not Repeat',
   recurring    BOOLEAN NOT NULL DEFAULT FALSE,
   image_url    TEXT
 );

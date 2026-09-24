@@ -1,31 +1,157 @@
-@import "tailwindcss";
+/* Tailwind removed — this app is a faithful clone styled by Sylvia's own
+   stylesheet (public/vendor/sylvias.css) plus the same CDN stylesheets the
+   original site uses. Keep this file minimal on purpose. */
 
-:root {
-  /* Sylvia's soul-food / Harlem palette */
-  --background: #faf6ef; /* warm cream */
-  --foreground: #241a12; /* deep espresso */
-  --brand: #0f3d2e; /* deep collard green */
-  --brand-dark: #0a2b20;
-  --accent: #c9962b; /* cornbread gold */
-  --accent-dark: #a97c1f;
-  --surface: #ffffff;
-  --muted: #6b5d4f;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-brand: var(--brand);
-  --color-brand-dark: var(--brand-dark);
-  --color-accent: var(--accent);
-  --color-accent-dark: var(--accent-dark);
-  --color-surface: var(--surface);
-  --color-muted: var(--muted);
-  --font-sans: var(--font-body);
-  --font-display: var(--font-display);
-}
-
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
+  margin: 0;
+  padding: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   Reservation feature — the one piece not in Sylvia's original stylesheet.
+   Styled to sit naturally inside the event modal.
+--------------------------------------------------------------------------- */
+.reservation-form,
+.reservation-success {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid #e5ded2;
+  font-family: inherit;
+}
+.reservation-heading {
+  margin: 0 0 14px;
+  font-size: 20px;
+  color: #1c1c1c;
+}
+.reservation-field {
+  margin-bottom: 14px;
+}
+.reservation-row {
+  display: flex;
+  gap: 14px;
+}
+.reservation-row .reservation-field {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.reservation-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+}
+.reservation-optional {
+  font-weight: 400;
+  color: #999;
+}
+.reservation-form input,
+.reservation-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #cfc7b8;
+  border-radius: 6px;
+  font-size: 15px;
+  font-family: inherit;
+  background: #fff;
+}
+.reservation-form input:focus,
+.reservation-form textarea:focus {
+  outline: 2px solid #b8892b;
+  outline-offset: 1px;
+  border-color: #b8892b;
+}
+.reservation-form textarea {
+  resize: vertical;
+}
+.party-stepper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.party-stepper button {
+  width: 44px;
+  height: 44px;
+  border: 1px solid #cfc7b8;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  color: #1c1c1c;
+}
+.party-stepper button:hover:not(:disabled) {
+  border-color: #b8892b;
+}
+.party-stepper button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.party-count {
+  min-width: 44px;
+  text-align: center;
+  font-size: 26px;
+  font-weight: 700;
+  color: #1c1c1c;
+}
+.party-suffix {
+  color: #666;
+  font-size: 14px;
+}
+.reservation-hint,
+.reservation-success-sub {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #888;
+}
+.reservation-error {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #b3261e;
+}
+.reservation-alert {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: #fbeaea;
+  color: #8a1c14;
+  font-size: 14px;
+}
+.reservation-submit {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 4px;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 6px;
+  background: #b8892b;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.reservation-submit:hover:not(:disabled) {
+  background: #9c711f;
+}
+.reservation-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+.reservation-success {
+  text-align: center;
+}
+.reservation-success-badge {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 10px;
+  border-radius: 50%;
+  background: #e8f2e8;
+  color: #2e7d32;
+  font-size: 30px;
+  line-height: 56px;
+}
+.reservation-success h3 {
+  margin: 0 0 6px;
 }

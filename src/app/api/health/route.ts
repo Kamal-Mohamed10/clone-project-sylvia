@@ -1,25 +1,19 @@
-import { hasDb, sql } from "@/lib/db";
-
-type Health =
-  | { ok: true; db: "connected" | "demo-mode" }
-  | { ok: false; db: "error"; error: string };
+import { hasDb, query } from "@/lib/db";
 
 export async function GET(): Promise<Response> {
   if (!hasDb) {
-    const body: Health = { ok: true, db: "demo-mode" };
-    return Response.json(body);
+    return Response.json(
+      { ok: false, db: "unconfigured", error: "DATABASE_URL is not set" },
+      { status: 500 },
+    );
   }
-
   try {
-    await sql`SELECT 1`;
-    const body: Health = { ok: true, db: "connected" };
-    return Response.json(body);
+    const rows = await query<{ count: string }>("SELECT COUNT(*) AS count FROM events");
+    return Response.json({ ok: true, db: "connected", events: Number(rows[0].count) });
   } catch (err) {
-    const body: Health = {
-      ok: false,
-      db: "error",
-      error: err instanceof Error ? err.message : "unknown",
-    };
-    return Response.json(body, { status: 500 });
+    return Response.json(
+      { ok: false, db: "error", error: err instanceof Error ? err.message : "unknown" },
+      { status: 500 },
+    );
   }
 }

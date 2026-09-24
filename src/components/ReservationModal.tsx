@@ -1,21 +1,29 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { EventItem } from "@/lib/types";
-import { createReservation, type ReservationState } from "@/lib/actions";
+import { cardTimeRange } from "@/lib/calendar";
 import { MAX_PARTY_SIZE } from "@/lib/validators";
-import { formatLongDate, formatTimeRange } from "@/lib/format";
 
-const INITIAL: ReservationState = { status: "idle" };
+type SubmitState =
+  | { status: "idle" | "submitting" }
+  | { status: "error"; message: string; fieldErrors?: Record<string, string> }
+  | { status: "success"; message: string; partySize: number };
 
-/** Next upcoming Sunday (or today if today is Sunday), as YYYY-MM-DD. */
-function nextSunday(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + ((7 - d.getDay()) % 7));
-  return d.toISOString().slice(0, 10);
+/** Next upcoming occurrence of the event's weekday, as YYYY-MM-DD. */
+function nextOccurrence(startDate: string): string {
+  const [y, m, d] = startDate.split("-").map(Number);
+  const start = new Date(y, m - 1, d);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const cursor = new Date(start);
+  while (cursor < today) cursor.setDate(cursor.getDate() + 7);
+  return `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`;
 }
-
-const todayISO = () => new Date().toISOString().slice(0, 10);
+const todayISO = () => {
+  const t = new Date();
+  return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
+};
 
 export function ReservationModal({
   event,
@@ -24,17 +32,16 @@ export function ReservationModal({
   event: EventItem | null;
   onClose: () => void;
 }) {
-  // Lock body scroll + wire Escape while open.
   useEffect(() => {
     if (!event) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
+    document.body.classList.add("event-calendar-modal-open");
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
+      document.body.classList.remove("event-calendar-modal-open");
     };
   }, [event, onClose]);
 
@@ -42,293 +49,253 @@ export function ReservationModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-6"
-      onClick={onClose}
-      role="presentation"
+      aria-hidden="false"
+      className="event-calendar-modal is-open"
+      id="eventCalendarModal"
+      role="dialog"
     >
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="reservation-title"
-        className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-surface shadow-xl sm:rounded-2xl"
-        onClick={(e) => e.stopPropagation()}
+        className="event-calendar-modal-overlay"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onClose();
+        }}
       >
-        {/* keyed so form state resets when switching events */}
-        <ReservationForm key={event.id} event={event} onClose={onClose} />
+        <div className="event-calendar-modal-dialog">
+          <div className="event-calendar-modal-content">
+            <div className="event-calendar-modal-media" aria-hidden="true">
+              {event.imageUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={event.imageUrl} alt="" />
+              )}
+            </div>
+            <div className="event-calendar-modal-text">
+              <ModalBody key={event.id} event={event} onClose={onClose} />
+            </div>
+          </div>
+          <button
+            aria-label="Close event"
+            className="event-calendar-modal-close"
+            type="button"
+            onClick={onClose}
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-function ReservationForm({
+function ModalBody({
   event,
   onClose,
 }: {
   event: EventItem;
   onClose: () => void;
 }) {
-  const [state, formAction, pending] = useActionState(
-    createReservation,
-    INITIAL,
-  );
   const [partySize, setPartySize] = useState(2);
+  const [state, setState] = useState<SubmitState>({ status: "idle" });
+  const formRef = useRef<HTMLFormElement>(null);
 
   const fieldError = (name: string) =>
     state.status === "error" ? state.fieldErrors?.[name] : undefined;
 
-  if (state.status === "success") {
-    const c = state.confirmation;
-    return (
-      <div className="p-8 text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-accent/20 text-4xl">
-          🎉
-        </div>
-        <h2 className="mt-4 font-display text-2xl font-bold text-brand">
-          Table reserved!
-        </h2>
-        <p className="mt-2 text-foreground/80">
-          Thanks, {c.guestName}. We&apos;ve got your party of{" "}
-          <strong>{c.partySize}</strong> down for{" "}
-          <strong>{c.eventTitle}</strong> on {formatLongDate(c.reservationDate)}.
-        </p>
-        <p className="mt-2 text-sm text-muted">
-          A confirmation will follow by email. See you at Sylvia&apos;s!
-        </p>
-        <button
-          type="button"
-          onClick={onClose}
-          className="mt-6 min-h-11 w-full rounded-lg bg-brand px-4 py-2.5 font-semibold text-[#f6efe2] hover:bg-brand-dark"
-        >
-          Done
-        </button>
-      </div>
-    );
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setState({ status: "submitting" });
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    const payload = {
+      eventId: event.id,
+      guestName: String(fd.get("guestName") ?? ""),
+      email: String(fd.get("email") ?? ""),
+      phone: String(fd.get("phone") ?? ""),
+      partySize,
+      reservationDate: String(fd.get("reservationDate") ?? ""),
+      notes: String(fd.get("notes") ?? ""),
+    };
+    try {
+      const res = await fetch("/api/reservations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setState({ status: "success", message: data.message, partySize });
+      } else {
+        setState({
+          status: "error",
+          message: data.error ?? "Something went wrong.",
+          fieldErrors: data.fieldErrors,
+        });
+      }
+    } catch {
+      setState({
+        status: "error",
+        message: "Network error — please try again.",
+      });
+    }
   }
 
   return (
-    <form action={formAction} className="flex flex-col">
-      {/* Header */}
-      <div className="sticky top-0 flex items-start justify-between gap-4 border-b border-black/10 bg-surface p-5">
-        <div>
-          <p className="text-sm font-semibold text-accent-dark">
-            {event.dayLabel} · {formatTimeRange(event.startTime, event.endTime)}
-          </p>
-          <h2
-            id="reservation-title"
-            className="mt-0.5 font-display text-xl font-bold text-brand"
-          >
-            Reserve · {event.title}
-          </h2>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          className="shrink-0 rounded-full p-2 text-muted hover:bg-black/5"
-        >
-          <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
-            <path
-              d="M5 5l10 10M15 5L5 15"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-          </svg>
-        </button>
+    <>
+      {/* Event details (mirrors the original modal text content) */}
+      <h2>{event.title}</h2>
+      <p className="event-main-text event-day">{event.dayLabel}</p>
+      <div className="event-info-text">
+        <p>{event.description}</p>
       </div>
+      <p className="event-main-text event-time">
+        {cardTimeRange(event.startTime, event.endTime)}
+      </p>
 
-      {/* Hidden context */}
-      <input type="hidden" name="eventId" value={event.id} />
-      <input type="hidden" name="eventTitle" value={event.title} />
-      <input type="hidden" name="partySize" value={partySize} />
-
-      <div className="space-y-5 p-5">
-        {state.status === "error" && (
-          <p
-            role="alert"
-            className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800"
-          >
-            {state.message}
+      {/* Reservation feature */}
+      {state.status === "success" ? (
+        <div className="reservation-success" role="status">
+          <div className="reservation-success-badge">✓</div>
+          <h3>Table reserved!</h3>
+          <p>{state.message}</p>
+          <p className="reservation-success-sub">
+            A confirmation will follow by email.
           </p>
-        )}
+          <button type="button" className="reservation-submit" onClick={onClose}>
+            Done
+          </button>
+        </div>
+      ) : (
+        <form ref={formRef} className="reservation-form" onSubmit={onSubmit} noValidate>
+          <h3 className="reservation-heading">Reserve a table</h3>
 
-        {/* Party size — the headline field */}
-        <fieldset>
-          <legend className="text-sm font-semibold text-foreground">
-            How many in your party?
-          </legend>
-          <div className="mt-2 flex items-center gap-4">
-            <button
-              type="button"
-              aria-label="Decrease party size"
-              onClick={() => setPartySize((n) => Math.max(1, n - 1))}
-              disabled={partySize <= 1}
-              className="flex h-11 w-11 items-center justify-center rounded-lg border border-black/15 text-xl font-bold text-brand disabled:opacity-40 hover:border-accent"
-            >
-              −
-            </button>
-            <span
-              aria-live="polite"
-              className="min-w-16 text-center font-display text-3xl font-bold text-brand"
-            >
-              {partySize}
-            </span>
-            <button
-              type="button"
-              aria-label="Increase party size"
-              onClick={() =>
-                setPartySize((n) => Math.min(MAX_PARTY_SIZE, n + 1))
-              }
-              disabled={partySize >= MAX_PARTY_SIZE}
-              className="flex h-11 w-11 items-center justify-center rounded-lg border border-black/15 text-xl font-bold text-brand disabled:opacity-40 hover:border-accent"
-            >
-              +
-            </button>
-            <span className="text-sm text-muted">
-              {partySize === 1 ? "guest" : "guests"}
-            </span>
-          </div>
-          <p className="mt-1 text-xs text-muted">
-            Parties over {MAX_PARTY_SIZE}? Please call us at (212) 996-0660.
-          </p>
-        </fieldset>
-
-        {/* Date */}
-        <Field label="Date of visit" htmlFor="reservationDate" error={fieldError("reservationDate")}>
-          {event.recurring ? (
-            <input
-              id="reservationDate"
-              name="reservationDate"
-              type="date"
-              required
-              defaultValue={nextSunday()}
-              min={todayISO()}
-              className={inputCls(!!fieldError("reservationDate"))}
-            />
-          ) : (
-            <>
-              <input type="hidden" name="reservationDate" value={event.startDate} />
-              <p className="rounded-lg border border-black/10 bg-black/[0.03] px-3 py-2.5 text-foreground">
-                {formatLongDate(event.startDate)}
-              </p>
-            </>
+          {state.status === "error" && !state.fieldErrors && (
+            <p className="reservation-alert" role="alert">
+              {state.message}
+            </p>
           )}
-        </Field>
 
-        {/* Name */}
-        <Field label="Full name" htmlFor="guestName" error={fieldError("guestName")}>
-          <input
-            id="guestName"
-            name="guestName"
-            type="text"
-            required
-            autoComplete="name"
-            placeholder="Jordan Rivera"
-            className={inputCls(!!fieldError("guestName"))}
-          />
-        </Field>
+          <div className="reservation-field">
+            <span className="reservation-label">How many in your party?</span>
+            <div className="party-stepper">
+              <button
+                type="button"
+                aria-label="Decrease party size"
+                onClick={() => setPartySize((n) => Math.max(1, n - 1))}
+                disabled={partySize <= 1}
+              >
+                −
+              </button>
+              <span className="party-count" aria-live="polite">
+                {partySize}
+              </span>
+              <button
+                type="button"
+                aria-label="Increase party size"
+                onClick={() => setPartySize((n) => Math.min(MAX_PARTY_SIZE, n + 1))}
+                disabled={partySize >= MAX_PARTY_SIZE}
+              >
+                +
+              </button>
+              <span className="party-suffix">
+                {partySize === 1 ? "guest" : "guests"}
+              </span>
+            </div>
+            <p className="reservation-hint">
+              Parties over {MAX_PARTY_SIZE}? Please call (212) 996-0660.
+            </p>
+          </div>
 
-        {/* Email + phone */}
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Email" htmlFor="email" error={fieldError("email")}>
+          <div className="reservation-field">
+            <label className="reservation-label" htmlFor="reservationDate">
+              Date of visit
+            </label>
+            {event.recurring ? (
+              <input
+                id="reservationDate"
+                name="reservationDate"
+                type="date"
+                required
+                defaultValue={nextOccurrence(event.startDate)}
+                min={todayISO()}
+              />
+            ) : (
+              <input type="text" name="reservationDate" readOnly value={event.startDate} />
+            )}
+            {fieldError("reservationDate") && (
+              <p className="reservation-error">{fieldError("reservationDate")}</p>
+            )}
+          </div>
+
+          <div className="reservation-field">
+            <label className="reservation-label" htmlFor="guestName">
+              Full name
+            </label>
             <input
-              id="email"
-              name="email"
-              type="email"
+              id="guestName"
+              name="guestName"
+              type="text"
               required
-              autoComplete="email"
-              placeholder="you@email.com"
-              className={inputCls(!!fieldError("email"))}
+              autoComplete="name"
+              placeholder="Jordan Rivera"
             />
-          </Field>
-          <Field
-            label="Phone"
-            htmlFor="phone"
-            optional
-            error={fieldError("phone")}
+            {fieldError("guestName") && (
+              <p className="reservation-error">{fieldError("guestName")}</p>
+            )}
+          </div>
+
+          <div className="reservation-row">
+            <div className="reservation-field">
+              <label className="reservation-label" htmlFor="email">
+                Email
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                autoComplete="email"
+                placeholder="you@email.com"
+              />
+              {fieldError("email") && (
+                <p className="reservation-error">{fieldError("email")}</p>
+              )}
+            </div>
+            <div className="reservation-field">
+              <label className="reservation-label" htmlFor="phone">
+                Phone <span className="reservation-optional">(optional)</span>
+              </label>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                autoComplete="tel"
+                placeholder="(212) 555-0100"
+              />
+            </div>
+          </div>
+
+          <div className="reservation-field">
+            <label className="reservation-label" htmlFor="notes">
+              Special requests <span className="reservation-optional">(optional)</span>
+            </label>
+            <textarea
+              id="notes"
+              name="notes"
+              rows={2}
+              placeholder="Allergies, seating, a birthday to celebrate…"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="reservation-submit"
+            disabled={state.status === "submitting"}
           >
-            <input
-              id="phone"
-              name="phone"
-              type="tel"
-              autoComplete="tel"
-              placeholder="(212) 555-0100"
-              className={inputCls(!!fieldError("phone"))}
-            />
-          </Field>
-        </div>
-
-        {/* Notes */}
-        <Field
-          label="Special requests"
-          htmlFor="notes"
-          optional
-          error={fieldError("notes")}
-        >
-          <textarea
-            id="notes"
-            name="notes"
-            rows={2}
-            placeholder="Allergies, seating, a birthday to celebrate…"
-            className={inputCls(!!fieldError("notes"))}
-          />
-        </Field>
-      </div>
-
-      {/* Submit */}
-      <div className="sticky bottom-0 border-t border-black/10 bg-surface p-5">
-        <button
-          type="submit"
-          disabled={pending}
-          className="min-h-12 w-full rounded-lg bg-accent px-4 py-3 font-display text-lg font-bold text-brand-dark transition hover:bg-accent-dark disabled:cursor-not-allowed disabled:opacity-70"
-        >
-          {pending
-            ? "Reserving…"
-            : `Confirm reservation for ${partySize}`}
-        </button>
-      </div>
-    </form>
-  );
-}
-
-function Field({
-  label,
-  htmlFor,
-  optional,
-  error,
-  children,
-}: {
-  label: string;
-  htmlFor: string;
-  optional?: boolean;
-  error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label
-        htmlFor={htmlFor}
-        className="mb-1 flex items-center justify-between text-sm font-semibold text-foreground"
-      >
-        <span>{label}</span>
-        {optional && (
-          <span className="text-xs font-normal text-muted">Optional</span>
-        )}
-      </label>
-      {children}
-      {error && (
-        <p className="mt-1 text-xs text-red-700" role="alert">
-          {error}
-        </p>
+            {state.status === "submitting"
+              ? "Reserving…"
+              : `Confirm reservation for ${partySize}`}
+          </button>
+        </form>
       )}
-    </div>
+    </>
   );
-}
-
-function inputCls(hasError: boolean): string {
-  return [
-    "w-full rounded-lg border bg-surface px-3 py-2.5 text-foreground",
-    "focus:outline-2 focus:outline-offset-1 focus:outline-accent",
-    hasError ? "border-red-400" : "border-black/15",
-  ].join(" ");
 }

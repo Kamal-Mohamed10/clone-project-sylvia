@@ -1,31 +1,32 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 
-const display = Playfair_Display({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["600", "700", "800"],
-});
-
-const body = Source_Sans_3({
-  variable: "--font-body",
-  subsets: ["latin"],
-});
+const CDN = "https://static.spotapps.co/web/sylviasrestaurant--com";
 
 export const metadata: Metadata = {
-  title: "Events & Reservations · Sylvia's Restaurant",
+  title: "Events · Sylvia's Restaurant",
   description:
-    "Reserve your table for live gospel brunch and special events at Sylvia's, the Queen of Soul Food in Harlem since 1962.",
+    "Events at Sylvia's, the Queen of Soul Food in Harlem since 1962. Reserve your table.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${display.variable} ${body.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col font-sans">{children}</body>
+    <html lang="en">
+      <head>
+        {/* Same stylesheets the original Sylvia's site loads, so the events
+            page renders identically. Order matches the source. */}
+        <link
+          rel="stylesheet"
+          href={`${CDN}/lib/bootstrap/css/bootstrap.min.css`}
+        />
+        <link
+          rel="stylesheet"
+          href={`${CDN}/lib/font-awesome-4.7.0/css/font-awesome.min.css`}
+        />
+        {/* Sylvia's own stylesheet, vendored locally (== style.css?version2). */}
+        <link rel="stylesheet" href="/vendor/sylvias.css" />
+      </head>
+      <body>{children}</body>
     </html>
   );
 }

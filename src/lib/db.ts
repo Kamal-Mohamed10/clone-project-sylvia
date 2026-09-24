@@ -1,13 +1,34 @@
-import { sql } from "@vercel/postgres";
+import "server-only";
+import { Pool, type QueryResultRow } from "pg";
 
 /**
- * True when a Postgres connection string is present in the environment.
- * Until Vercel/Neon is provisioned we run in "demo mode": events are
- * served from seed data and reservations are persisted to a local JSON
- * file so the full flow is demonstrable without a database.
+ * A single shared node-postgres pool. Works against a local Postgres in
+ * development and any standard Postgres (e.g. Neon) in production.
+ * The pool is cached on globalThis to survive Next.js dev hot-reloads.
  */
-export const hasDb: boolean = Boolean(
-  process.env.POSTGRES_URL || process.env.DATABASE_URL,
-);
+const globalForPg = globalThis as unknown as { _pgPool?: Pool };
 
-export { sql };
+export const hasDb: boolean = Boolean(process.env.DATABASE_URL);
+
+function getPool(): Pool {
+  if (!globalForPg._pgPool) {
+    globalForPg._pgPool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      // Neon and other hosted providers require TLS; local Postgres does not.
+      ssl: process.env.DATABASE_URL?.includes("localhost")
+        ? undefined
+        : { rejectUnauthorized: false },
+    });
+  }
+  return globalForPg._pgPool;
+}
+
+/** Parameterized query helper. Never interpolate user input into `text`. */
+export async function query<T extends QueryResultRow = QueryResultRow>(
+  text: string,
+  params?: unknown[],
+): Promise<T[]> {
+  const pool = getPool();
+  const result = await pool.query<T>(text, params as never[]);
+  return result.rows;
+}
