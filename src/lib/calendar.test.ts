@@ -16,9 +16,10 @@ describe("time formatting", () => {
     expect(calendarEventTime("11:00", "20:00")).toBe("11am-8pm");
     expect(calendarEventTime("11:00", null)).toBe("11am");
   });
-  it("cardTimeRange keeps :MM and uppercase AM/PM", () => {
+  it("cardTimeRange keeps :MM with 2-digit hour and uppercase AM/PM", () => {
     expect(cardTimeRange("11:00", "22:00")).toBe("11:00 AM - 10:00 PM");
-    expect(cardTimeRange("12:30", "16:00")).toBe("12:30 PM - 4:00 PM");
+    expect(cardTimeRange("12:30", "16:00")).toBe("12:30 PM - 04:00 PM");
+    expect(cardTimeRange("11:00", "20:00")).toBe("11:00 AM - 08:00 PM");
   });
 });
 

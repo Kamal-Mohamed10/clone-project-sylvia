@@ -2,15 +2,16 @@ import type { EventItem } from "./types";
 
 /**
  * The six real events lifted from Sylvia's current events page.
- * Used to seed the database (single source of truth for db:migrate).
+ * `description` holds the original event HTML (rendered as-is), matching the source.
+ * Only the Gospel Brunch and Thanksgiving events have images in the original.
  */
 export const SEED_EVENTS: EventItem[] = [
   {
     id: "3446982",
     slug: "gospel-brunch",
-    title: "Sylvia's World Famous Gospel Brunch - Live Gospel Music",
+    title: "Sylvia’s World Famous Gospel Brunch - Live Gospel Music",
     description:
-      "Sunday Gospel Brunch in Harlem is one of the best ways to spend a Sunday! Come enjoy uplifting live gospel music, soulful energy, and the legendary soul food Sylvia's has been serving for generations. Good food. Great music. Harlem tradition.",
+      '<p>Every Sunday</p><p style="text-align: center;"><b></b></p><p style="text-align: center;"><b>Sunday Gospel Brunch in Harlem </b>is one of the best ways to spend a Sunday!</p><p style="text-align: center;">Come enjoy uplifting live gospel music, soulful energy, and the legendary soul food Sylvia’s has been serving for generations.</p><p style="text-align: center;">🎶 Live Gospel Sundays </p><p style="text-align: center;"><b>1st &amp; 2nd Sundays</b> — Antoine Dolberry </p><p style="text-align: center;"><b>3rd Sundays</b> — The Deborah Newallo Experience </p><p style="text-align: center;"><b>4th &amp; 5th Sundays</b> — Daria Jones</p><p style="text-align: center;">Good food. Great music. Harlem tradition. ❤️</p><p style="text-align: center;">Make Sunday brunch a soulful one at Sylvia’s.</p>',
     startDate: "2026-08-09",
     endDate: "2027-02-28",
     startTime: "12:30",
@@ -26,7 +27,7 @@ export const SEED_EVENTS: EventItem[] = [
     slug: "national-drink-beer-day",
     title: "National Drink Beer Day",
     description:
-      "Join us for National Drink Beer Day on Sept 28th and try one of our many craft brews!",
+      "<p>Join us for National Drink Beer Day on Sept 28th and try one of our many craft brews!</p>",
     startDate: "2026-09-28",
     endDate: null,
     startTime: "11:00",
@@ -40,7 +41,8 @@ export const SEED_EVENTS: EventItem[] = [
     id: "2297235",
     slug: "national-dessert-day",
     title: "National Dessert Day",
-    description: "Indulge in dinner and a dessert on National Dessert Day!",
+    description:
+      "<p>Indulge in dinner and a dessert on National Dessert Day!</p>",
     startDate: "2026-10-14",
     endDate: null,
     startTime: "11:00",
@@ -54,7 +56,7 @@ export const SEED_EVENTS: EventItem[] = [
     id: "2342013",
     slug: "halloween",
     title: "Halloween",
-    description: "Bring your best costume and join us on Halloween!",
+    description: "<p>Bring your best costume and join us on Halloween!</p>",
     startDate: "2026-10-31",
     endDate: null,
     startTime: "11:00",
@@ -62,14 +64,13 @@ export const SEED_EVENTS: EventItem[] = [
     dayLabel: "Saturday October 31st",
     recurrenceType: "Does not Repeat",
     recurring: false,
-    imageUrl:
-      "https://static.spotapps.co/spots/1f/e3d81c81894c86a52cd390751b676f/w926",
+    imageUrl: null,
   },
   {
     id: "2487071",
     slug: "national-sandwich-day",
     title: "National Sandwich Day",
-    description: "Because food tastes better between bread!",
+    description: "<p>Because food tastes better between bread!</p>",
     startDate: "2026-11-03",
     endDate: null,
     startTime: "11:00",
@@ -77,15 +78,14 @@ export const SEED_EVENTS: EventItem[] = [
     dayLabel: "Tuesday November 3rd",
     recurrenceType: "Does not Repeat",
     recurring: false,
-    imageUrl:
-      "https://static.spotapps.co/spots/1f/e3d81c81894c86a52cd390751b676f/w926",
+    imageUrl: null,
   },
   {
     id: "2415121",
     slug: "thanksgiving",
     title: "Thanksgiving",
     description:
-      "Bring your friends and family by on Thanksgiving Day for a celebratory feast!",
+      "<p>Bring your friends and family by on Thanksgiving Day for a celebratory feast!</p>",
     startDate: "2026-11-26",
     endDate: null,
     startTime: "11:00",

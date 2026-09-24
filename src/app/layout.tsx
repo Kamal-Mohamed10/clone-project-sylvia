@@ -16,7 +16,8 @@ const STYLESHEETS = [
   "https://static.spotapps.co/web-lib/leaflet/leaflet@1.3.1/dist/leaflet.css",
   "/vendor/sylvias.css", // == css/style.css?version2, vendored
   `${CDN}/css/bottom_navigation_v1.css`,
-  `${CDN}/css/custom.css`,
+  // NOTE: the original clone references css/custom.css as a relative path that
+  // 404s locally, so it never applies — cards/toolbar stay dark. We match that.
   `${CDN}/lib/icons_font/css/social_icons.css`,
   `${CDN}/lib/twitter_x_font_icon/css/twitter_x.css`,
 ];

@@ -143,9 +143,10 @@ function ModalBody({
       {/* Event details (mirrors the original modal text content) */}
       <h2>{event.title}</h2>
       <p className="event-main-text event-day">{event.dayLabel}</p>
-      <div className="event-info-text">
-        <p>{event.description}</p>
-      </div>
+      <div
+        className="event-info-text"
+        dangerouslySetInnerHTML={{ __html: event.description }}
+      />
       <p className="event-main-text event-time">
         {cardTimeRange(event.startTime, event.endTime)}
       </p>

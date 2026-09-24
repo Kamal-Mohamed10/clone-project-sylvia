@@ -16,14 +16,14 @@ body {
 .reservation-success {
   margin-top: 22px;
   padding-top: 20px;
-  border-top: 1px solid rgba(0, 0, 0, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
   font-family: inherit;
   text-align: left;
 }
 .reservation-heading {
   margin: 0 0 14px;
   font-size: 20px;
-  color: #2d2440;
+  color: #f4efe6;
 }
 .reservation-field {
   margin-bottom: 14px;
@@ -41,11 +41,11 @@ body {
   margin-bottom: 6px;
   font-weight: 600;
   font-size: 14px;
-  color: #3a3340;
+  color: #e7ddca;
 }
 .reservation-optional {
   font-weight: 400;
-  color: #7a6f52;
+  color: #a99f8c;
 }
 .reservation-form input,
 .reservation-form textarea {
@@ -95,17 +95,17 @@ body {
   text-align: center;
   font-size: 26px;
   font-weight: 700;
-  color: #2d2440;
+  color: #f4efe6;
 }
 .party-suffix {
-  color: #5c5340;
+  color: #cbbfa9;
   font-size: 14px;
 }
 .reservation-hint,
 .reservation-success-sub {
   margin: 6px 0 0;
   font-size: 12px;
-  color: #6f6342;
+  color: #a99f8c;
 }
 .reservation-error {
   margin: 4px 0 0;
@@ -142,7 +142,7 @@ body {
 }
 .reservation-success {
   text-align: center;
-  color: #2d2440;
+  color: #f0e9db;
 }
 .reservation-success-badge {
   width: 56px;

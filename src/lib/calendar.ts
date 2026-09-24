@@ -73,13 +73,13 @@ export function calendarEventTime(start: string, end: string | null): string {
   return end ? `${evTime(start)}-${evTime(end)}` : evTime(start);
 }
 
-/** Pinboard/agenda card time label, e.g. "11:00 AM - 10:00 PM". */
+/** Pinboard/agenda card time label, e.g. "11:00 AM - 04:00 PM" (2-digit hour). */
 export function cardTimeRange(start: string, end: string | null): string {
   const fmt = (hhmm: string) => {
     const [h, m] = hhmm.split(":").map(Number);
     const period = h >= 12 ? "PM" : "AM";
     const h12 = h % 12 === 0 ? 12 : h % 12;
-    return `${h12}:${pad(m)} ${period}`;
+    return `${pad(h12)}:${pad(m)} ${period}`;
   };
   return end ? `${fmt(start)} - ${fmt(end)}` : fmt(start);
 }

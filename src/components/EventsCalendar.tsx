@@ -121,6 +121,10 @@ export function EventsCalendar({
     if (e) setSelected(e);
   };
 
+  // Match the original: mark past days (day-passed) and today (current-day).
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
   return (
     <div className="events-calendar-page-content">
       {/* ---- Toolbar ---- */}
@@ -252,12 +256,17 @@ export function EventsCalendar({
                     <div
                       key={cell.date}
                       aria-hidden="true"
-                      className={`empty-day-card${cell.weekend ? " weekend" : ""}`}
+                      className={`empty-day-card${cell.weekend ? " weekend" : ""}${cell.date < today ? " day-passed" : ""}`}
                       data-date={cell.date}
                       data-week-day={cell.weekDay}
                     />
                   ) : (
-                    <DayCard key={cell.date} cell={cell} onOpen={openEvent} />
+                    <DayCard
+                      key={cell.date}
+                      cell={cell}
+                      onOpen={openEvent}
+                      today={today}
+                    />
                   ),
                 )}
               </div>
@@ -309,9 +318,10 @@ function EventCard({
       <div className="event-text-holder">
         <h2>{event.title}</h2>
         <p className="event-main-text event-day">{event.dayLabel}</p>
-        <div className="event-info-text">
-          <p>{event.description}</p>
-        </div>
+        <div
+          className="event-info-text"
+          dangerouslySetInnerHTML={{ __html: event.description }}
+        />
         <div className="event-read-more" inert>
           Read more
         </div>
@@ -326,15 +336,19 @@ function EventCard({
 function DayCard({
   cell,
   onOpen,
+  today,
 }: {
   cell: CalendarYear["months"][number]["cells"][number];
   onOpen: (id: string) => void;
+  today: string;
 }) {
   const hasEvents = cell.events.length > 0;
+  const state =
+    cell.date < today ? " day-passed" : cell.date === today ? " current-day" : "";
   return (
     <div
       {...(hasEvents ? {} : { "aria-hidden": "true" })}
-      className={`day-card${cell.weekend ? " weekend" : ""} ${hasEvents ? "has-events" : "no-events"}`}
+      className={`day-card${cell.weekend ? " weekend" : ""} ${hasEvents ? "has-events" : "no-events"}${state}`}
       data-date={cell.date}
       data-week-day={cell.weekDay}
     >
