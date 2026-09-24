@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { EventItem } from "@/lib/types";
 import type { CalendarYear } from "@/lib/calendar";
 import {
@@ -69,6 +69,52 @@ export function EventsCalendar({
 
   const noEvents =
     view === "calendar" ? sliderMonths.length === 0 : visibleCards.length === 0;
+
+  // Pinboard & Agenda cards are position:absolute in Sylvia's CSS; the original
+  // uses Masonry (after imagesLoaded) to place them and give the container
+  // height. Replicate that exactly, re-laying out on view/filter/resize.
+  const pinboardRef = useRef<HTMLDivElement>(null);
+  const masonryRef = useRef<{ layout: () => void; destroy: () => void } | null>(
+    null,
+  );
+  useEffect(() => {
+    if (view === "calendar") {
+      masonryRef.current?.destroy();
+      masonryRef.current = null;
+      return;
+    }
+    const container = pinboardRef.current;
+    if (!container) return;
+    let cancelled = false;
+
+    (async () => {
+      const [{ default: Masonry }, { default: imagesLoaded }] =
+        await Promise.all([import("masonry-layout"), import("imagesloaded")]);
+      if (cancelled) return;
+
+      const build = () => {
+        if (cancelled) return;
+        masonryRef.current?.destroy();
+        masonryRef.current = new Masonry(container, {
+          itemSelector: ".event-calendar-card",
+          columnWidth: 270,
+          gutter: 20,
+          fitWidth: true,
+          horizontalOrder: true,
+        }) as unknown as { layout: () => void; destroy: () => void };
+      };
+
+      build();
+      imagesLoaded(container, build);
+    })();
+
+    const onResize = () => masonryRef.current?.layout();
+    window.addEventListener("resize", onResize);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("resize", onResize);
+    };
+  }, [view, monthKey, visibleCards.length]);
 
   const openEvent = (id: string) => {
     const e = byId.get(id);
@@ -147,6 +193,7 @@ export function EventsCalendar({
 
       {/* ---- Pinboard / Agenda ---- */}
       <div
+        ref={pinboardRef}
         className={`events-general-holder ${view === "agenda" ? "events-agenda-view" : "events-pinboard-view"}`}
         id="pinboardAgendaContainer"
         style={{ display: view === "calendar" ? "none" : "" }}
