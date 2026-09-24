@@ -8,29 +8,123 @@ body {
   padding: 0;
 }
 
+/* Single-event modal (desktop): stack the layout so the image sits across the
+   top at full modal width and half the viewport height, centered — this shows
+   every image consistently instead of side-cropping some of them. */
+@media (min-width: 768px) {
+  .events-calendar .event-calendar-modal-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .events-calendar .event-calendar-modal-media {
+    flex: 0 0 auto;
+    width: 100%;
+    height: 40vh;
+    position: relative;
+  }
+  .events-calendar .event-calendar-modal-media img {
+    object-position: center center;
+  }
+  /* Give the form more vertical room under the taller stacked image. */
+  .events-calendar .event-calendar-modal-text {
+    padding: 14px 22px 12px 22px;
+  }
+  /* Tighten the event detail block that sits above the form. */
+  .events-calendar .event-calendar-modal-title {
+    margin: 2px auto 6px;
+  }
+  /* Fade the image's bottom edge into the gold (#F5C552) info panel below,
+     so there's a soft transition instead of a hard horizontal seam. */
+  .events-calendar .event-calendar-modal-media::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 22%;
+    background: linear-gradient(
+      to bottom,
+      rgba(245, 197, 82, 0) 0%,
+      #f5c552 100%
+    );
+    pointer-events: none;
+  }
+  /* Fade the image's right edge into gold as well. */
+  .events-calendar .event-calendar-modal-media::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: 10%;
+    z-index: 1;
+    background: linear-gradient(
+      to right,
+      rgba(245, 197, 82, 0) 0%,
+      #f5c552 100%
+    );
+    pointer-events: none;
+  }
+}
+
+/* Pinboard "product" cards: the vendor rule sets the image to height:100%,
+   which collapses to `auto` inside the auto-height holder — so images render
+   at their full natural height (oversized, uneven cards, and object-fit never
+   engages). Pin every card image to one consistent, slightly smaller box and
+   let object-fit: cover crop to fit, so images always sit correctly regardless
+   of their source dimensions. */
+.events-calendar .events-pinboard-view .event-image-holder img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  display: block;
+}
+
+/* Tighten the event detail block (title / day / description / time) that sits
+   above the reservation form. The <h2> title carries no vendor class, so it
+   inherits large browser default margins; the event text rows also space out
+   generously for the standalone modal. Pull them in so the modal doesn't read
+   as too airy above the form. */
+.events-calendar .event-calendar-modal-text > h2 {
+  margin: 0 0 4px;
+}
+.events-calendar .event-calendar-modal-text .event-main-text,
+.events-calendar .event-calendar-modal-text .event-info-text {
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+.events-calendar .event-calendar-modal-text .event-info-text p {
+  margin-bottom: 2px;
+}
+.events-calendar .event-calendar-modal-text .event-time {
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
 /* ---------------------------------------------------------------------------
    Reservation feature — the one piece not in Sylvia's original stylesheet.
    Styled to sit naturally inside the event modal.
 --------------------------------------------------------------------------- */
 .reservation-form,
 .reservation-success {
-  margin-top: 22px;
-  padding-top: 20px;
+  margin-top: 10px;
+  padding-top: 10px;
   border-top: 1px solid rgba(0, 0, 0, 0.25);
   font-family: inherit;
   text-align: left;
 }
 .reservation-heading {
-  margin: 0 0 14px;
-  font-size: 20px;
+  margin: 0 0 8px;
+  font-size: 17px;
   color: #2d2440;
 }
 .reservation-field {
-  margin-bottom: 14px;
+  margin-bottom: 8px;
 }
 .reservation-row {
   display: flex;
-  gap: 14px;
+  gap: 10px;
 }
 .reservation-row .reservation-field {
   flex: 1 1 0;
@@ -38,9 +132,9 @@ body {
 }
 .reservation-label {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
   color: #33244d;
 }
 .reservation-optional {
@@ -51,7 +145,7 @@ body {
 .reservation-form textarea {
   width: 100%;
   box-sizing: border-box;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border: 1px solid #cfc7b8;
   border-radius: 6px;
   font-size: 15px;
@@ -67,18 +161,26 @@ body {
 .reservation-form textarea {
   resize: vertical;
 }
+.reservation-form input.reservation-date {
+  width: auto;
+  max-width: 180px;
+  cursor: pointer;
+}
+.reservation-form input.reservation-date::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}
 .party-stepper {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 .party-stepper button {
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 38px;
   border: 1px solid #cfc7b8;
   border-radius: 6px;
   background: #fff;
-  font-size: 22px;
+  font-size: 20px;
   line-height: 1;
   cursor: pointer;
   color: #1c1c1c;
@@ -90,12 +192,31 @@ body {
   opacity: 0.4;
   cursor: not-allowed;
 }
-.party-count {
-  min-width: 44px;
+.party-stepper .party-count {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  box-sizing: border-box;
   text-align: center;
-  font-size: 26px;
+  font-size: 16px;
   font-weight: 700;
   color: #2d2440;
+  border: 1px solid #cfc7b8;
+  border-radius: 6px;
+  background: #fff;
+  font-family: inherit;
+}
+.party-stepper .party-count:focus {
+  outline: none;
+  border-color: #b8892b;
+}
+.party-count::-webkit-outer-spin-button,
+.party-count::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.party-count {
+  -moz-appearance: textfield;
 }
 .party-suffix {
   color: #5c4a2a;
@@ -122,9 +243,9 @@ body {
 }
 .reservation-submit {
   width: 100%;
-  min-height: 48px;
-  margin-top: 4px;
-  padding: 12px 16px;
+  min-height: 44px;
+  margin-top: 2px;
+  padding: 10px 16px;
   border: 0;
   border-radius: 6px;
   background: #b8892b;

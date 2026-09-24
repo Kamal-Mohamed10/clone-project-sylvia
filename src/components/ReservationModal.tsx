@@ -185,9 +185,27 @@ function ModalBody({
               >
                 −
               </button>
-              <span className="party-count" aria-live="polite">
-                {partySize}
-              </span>
+              <input
+                type="number"
+                className="party-count"
+                aria-label="Party size"
+                inputMode="numeric"
+                min={1}
+                max={MAX_PARTY_SIZE}
+                value={partySize === 0 ? "" : partySize}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (raw === "") {
+                    setPartySize(0);
+                    return;
+                  }
+                  const n = Math.floor(Number(raw));
+                  if (!Number.isNaN(n)) {
+                    setPartySize(Math.min(MAX_PARTY_SIZE, Math.max(1, n)));
+                  }
+                }}
+                onBlur={() => setPartySize((n) => (n < 1 ? 1 : n))}
+              />
               <button
                 type="button"
                 aria-label="Increase party size"
@@ -214,12 +232,22 @@ function ModalBody({
                 id="reservationDate"
                 name="reservationDate"
                 type="date"
+                className="reservation-date"
                 required
                 defaultValue={nextOccurrence(event.startDate)}
                 min={todayISO()}
               />
             ) : (
-              <input type="text" name="reservationDate" readOnly value={event.startDate} />
+              <input
+                id="reservationDate"
+                name="reservationDate"
+                type="date"
+                className="reservation-date"
+                required
+                defaultValue={event.startDate}
+                min={event.startDate}
+                max={event.startDate}
+              />
             )}
             {fieldError("reservationDate") && (
               <p className="reservation-error">{fieldError("reservationDate")}</p>
