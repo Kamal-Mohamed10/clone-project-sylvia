@@ -32,3 +32,11 @@ export async function query<T extends QueryResultRow = QueryResultRow>(
   const result = await pool.query<T>(text, params as never[]);
   return result.rows;
 }
+
+/** Closes the shared pool. Intended for test teardown / graceful shutdown. */
+export async function endPool(): Promise<void> {
+  if (globalForPg._pgPool) {
+    await globalForPg._pgPool.end();
+    globalForPg._pgPool = undefined;
+  }
+}

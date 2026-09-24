@@ -1,0 +1,15 @@
+.events-background {
+        background: url(https://static.spotapps.co/website_images/ab_websites/10649_website_v1/events_back.jpg) no-repeat center center fixed; -webkit-background-size: cover;
+        background: linear-gradient(rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.82)), url(https://static.spotapps.co/website_images/ab_websites/10649_website_v1/events_back.jpg) no-repeat center center fixed;
+        -moz-background-size: cover;
+        -o-background-size: cover;
+        background-size: cover;
+        background-color: #100F0F;
+      }
+
+/* ---- next head style block ---- */
+a:focus:not(:focus-visible){outline:none;box-shadow:none;}
+a.get-directions-footer-link{display:inline-block;transform-origin:left center;transition:transform .2s ease;}
+a.get-directions-footer-link:hover{transform:scale(1.08);}
+@media (prefers-reduced-motion:reduce){a.get-directions-footer-link{transition:none;transform:none;}}
+a.get-directions-footer-link,a.get-directions-footer-link:hover{color:inherit!important;}

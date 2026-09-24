@@ -196,7 +196,7 @@ export function EventsCalendar({
         ref={pinboardRef}
         className={`events-general-holder ${view === "agenda" ? "events-agenda-view" : "events-pinboard-view"}`}
         id="pinboardAgendaContainer"
-        style={{ display: view === "calendar" ? "none" : "" }}
+        style={{ display: view === "calendar" ? "none" : "block" }}
       >
         {visibleCards.map((e) => (
           <EventCard key={e.id} event={e} onOpen={() => openEvent(e.id)} />
@@ -207,7 +207,7 @@ export function EventsCalendar({
       <div
         className="events-calendar-holder"
         id="calendarContainer"
-        style={{ display: view === "calendar" ? "" : "none" }}
+        style={{ display: view === "calendar" ? "block" : "none" }}
       >
         {sliderMonths.length > 0 && (
           <div className="calendar-slider-nav">
