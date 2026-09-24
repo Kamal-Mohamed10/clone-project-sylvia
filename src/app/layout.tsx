@@ -16,8 +16,10 @@ const STYLESHEETS = [
   "https://static.spotapps.co/web-lib/leaflet/leaflet@1.3.1/dist/leaflet.css",
   "/vendor/sylvias.css", // == css/style.css?version2, vendored
   `${CDN}/css/bottom_navigation_v1.css`,
-  // NOTE: the original clone references css/custom.css as a relative path that
-  // 404s locally, so it never applies — cards/toolbar stay dark. We match that.
+  // Sylvia's per-domain overrides — this is what gives the live site its gold
+  // event cards and toolbar. (The served static clone 404s on this file, which
+  // is why the clone looks dark; the real sylviasrestaurant.com loads it.)
+  `${CDN}/css/custom.css`,
   `${CDN}/lib/icons_font/css/social_icons.css`,
   `${CDN}/lib/twitter_x_font_icon/css/twitter_x.css`,
 ];

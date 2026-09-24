@@ -35,7 +35,8 @@ export const SEED_EVENTS: EventItem[] = [
     dayLabel: "Monday September 28th",
     recurrenceType: "Does not Repeat",
     recurring: false,
-    imageUrl: null,
+    imageUrl:
+      "https://images.unsplash.com/photo-1608270586620-248524c67de9?w=926&q=80",
   },
   {
     id: "2297235",
@@ -50,7 +51,8 @@ export const SEED_EVENTS: EventItem[] = [
     dayLabel: "Wednesday October 14th",
     recurrenceType: "Does not Repeat",
     recurring: false,
-    imageUrl: null,
+    imageUrl:
+      "https://images.unsplash.com/photo-1488477181946-6428a0291777?w=926&q=80",
   },
   {
     id: "2342013",
@@ -64,7 +66,8 @@ export const SEED_EVENTS: EventItem[] = [
     dayLabel: "Saturday October 31st",
     recurrenceType: "Does not Repeat",
     recurring: false,
-    imageUrl: null,
+    imageUrl:
+      "https://images.unsplash.com/photo-1509557965875-b88c97052f0e?w=926&q=80",
   },
   {
     id: "2487071",
@@ -78,7 +81,8 @@ export const SEED_EVENTS: EventItem[] = [
     dayLabel: "Tuesday November 3rd",
     recurrenceType: "Does not Repeat",
     recurring: false,
-    imageUrl: null,
+    imageUrl:
+      "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=926&q=80",
   },
   {
     id: "2415121",
