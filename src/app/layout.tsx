@@ -26,7 +26,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {/* Sylvia's own stylesheet, vendored locally (== style.css?version2). */}
         <link rel="stylesheet" href="/vendor/sylvias.css" />
       </head>
-      <body>{children}</body>
+      {/* Body classes match Sylvia's events page — the entire events
+          stylesheet is scoped under `.events-calendar` / `.events-container`. */}
+      <body className="drink-menu events-container events-background events-calendar">
+        {children}
+      </body>
     </html>
   );
 }
