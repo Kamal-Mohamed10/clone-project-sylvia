@@ -138,6 +138,48 @@ export const SERVICE_TIERS: ServiceTier[] = [
   },
 ];
 
+/**
+ * Per-dish thumbnails (openly-licensed, fetched by scripts/fetch-dish-images.py
+ * into /public/packages/dishes). Keyed by the exact `sampleItems` string; a few
+ * aliases share one photo (e.g. "Cornbread" and "Cornbread Muffins").
+ */
+const DISH_IMAGE_SLUG: Record<string, string> = {
+  "Down Home Fried Chicken": "fried-chicken",
+  "Smothered Chicken": "smothered-chicken",
+  "Scrambled Eggs": "scrambled-eggs",
+  Grits: "grits",
+  "Country Style Grits": "grits",
+  "Cornbread Muffins": "cornbread",
+  Cornbread: "cornbread",
+  "BBQ Chicken": "bbq-chicken",
+  "Barbecue Chicken": "bbq-chicken",
+  "Potato Salad": "potato-salad",
+  "Candied Yams": "candied-yams",
+  "World-Famous BBQ Ribs": "bbq-ribs",
+  "World-Famous BBQ Pork Ribs": "bbq-ribs",
+  "Baked Catfish (+$4)": "baked-catfish",
+  "Peach Cobbler": "peach-cobbler",
+  "Chicken Livers": "chicken-livers",
+  "1 Pork Chop": "pork-chop",
+  "Black-Eyed Peas": "black-eyed-peas",
+  "String Beans": "string-beans",
+  "Baked Whiting w/ Onions & Peppers": "baked-whiting",
+  "Uptown Iced Tea": "iced-tea",
+  "Sassy Rice": "sassy-rice",
+  Biscuits: "biscuits",
+  "Three Cheese Baked Macaroni Mini Bites": "mac-cheese",
+  "Catfish Fingers": "catfish-fingers",
+};
+
+/**
+ * Thumbnail path for one dish. Unmapped names fall back to `fallback` (usually
+ * the owning menu's photo) so the UI never renders a broken image.
+ */
+export function dishImage(name: string, fallback?: string): string {
+  const slug = DISH_IMAGE_SLUG[name];
+  return slug ? `/packages/dishes/${slug}.jpg` : (fallback ?? "");
+}
+
 /** Smallest minimum across all tiers — the point where the menu panel appears. */
 export const PACKAGE_THRESHOLD = Math.min(
   ...SERVICE_TIERS.map((t) => t.minGuests),
