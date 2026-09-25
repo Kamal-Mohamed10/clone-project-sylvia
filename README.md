@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sylvia's — Events Page (Next.js + SQL)
 
-## Getting Started
+A faithful clone of Sylvia's Restaurant events page, rebuilt on Next.js 16
+(App Router) with a full Postgres backend and an event **reservation system**
+(captures party size).
 
-First, run the development server:
+- **Look:** the original markup + Sylvia's own stylesheet (`public/vendor/sylvias.css`)
+  plus the same CDN stylesheets the live site uses — so the page renders identically.
+- **Data:** events and reservations both come from Postgres (node-postgres / `pg`).
+  The events page (`/events`) renders the Pinboard / Agenda / Calendar views from
+  DB rows; the Calendar grid is generated from the data.
+- **Reservations:** the native event modal hosts a party-size reservation form that
+  POSTs to `/api/reservations` (Zod-validated, parameterized `INSERT`).
+
+## Local development
+
+Requires a local Postgres (e.g. Postgres.app). Set the connection string:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# .env.local
+DATABASE_URL=postgresql://<user>@localhost:5432/sylvias_events
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Create the database, then apply the schema + seed the six events:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+createdb sylvias_events
+npm install
+npm run db:migrate     # applies db/schema.sql and seeds events from src/lib/seed-data.ts
+npm run dev            # http://localhost:3000/events
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Health check: `GET /api/health` → `{ ok, db, events }`.
 
-## Learn More
+## Deploy
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Point `DATABASE_URL` at a hosted Postgres (e.g. Neon). `pg` connects to both
+local and hosted Postgres; hosted providers use TLS automatically. Run
+`npm run db:migrate` once against the production database. Deploy is handled by
+the team (not from a personal Vercel account).
