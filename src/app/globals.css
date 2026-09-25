@@ -445,3 +445,136 @@ body {
   border-radius: 999px;
   padding: 2px 8px;
 }
+
+/* Empty layer that fills the dialog; the package preview is portaled here and
+   positioned within it. inset:0 makes its box match the dialog, so coordinates
+   measured against the dialog line up. Non-interactive so it never blocks the
+   modal; the popover re-enables nothing (it's non-interactive too). */
+.events-calendar #eventCalendarModal .package-popover-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* Hover/focus preview of a package's dishes. Portaled into the dialog and
+   absolutely positioned from the hovered item's rect (the menu column and its
+   scroll area both hide overflow, so the card has to live outside them). The id
+   scope outranks the vendored clone stylesheet. Pointer-events off so crossing
+   the gap to the card can't steal the hover and cause flicker. */
+.events-calendar #eventCalendarModal .package-detail-popover {
+  position: absolute;
+  z-index: 5;
+  width: 300px;
+  pointer-events: none;
+  overflow: hidden;
+  background: #fffdf6;
+  border: 1px solid #b8892b;
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.34);
+  color: #2d2440;
+  transform-origin: left center;
+  animation: package-detail-in 0.12s ease-out;
+}
+.events-calendar #eventCalendarModal .package-detail-popover.is-flipped {
+  transform-origin: right center;
+}
+/* Hero food photo. id-scoped so any broad `img` rule from the vendored clone
+   sheet can't stretch it. */
+.events-calendar #eventCalendarModal .package-detail-photo {
+  display: block;
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-bottom: 1px solid #e4dcc9;
+}
+.package-detail-body {
+  padding: 11px 14px 13px;
+}
+.package-detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.package-detail-name {
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.2;
+  color: #2d2440;
+}
+.package-detail-price {
+  flex: 0 0 auto;
+  font-weight: 700;
+  font-size: 15px;
+  color: #b8892b;
+}
+.package-detail-price small {
+  font-weight: 600;
+  font-size: 10px;
+  color: #8a7c5c;
+}
+.package-detail-summary {
+  font-size: 12px;
+  line-height: 1.3;
+  color: #5c5145;
+  margin-bottom: 10px;
+}
+.package-detail-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #7a5a1e;
+  margin-bottom: 5px;
+}
+.package-detail-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.package-detail-list li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  line-height: 1.25;
+  color: #3d3528;
+}
+/* id-scoped so the vendored clone sheet's broad img rule can't stretch it. */
+.events-calendar #eventCalendarModal .package-detail-dish-thumb {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border-radius: 7px;
+  object-fit: cover;
+  border: 1px solid #e4dcc9;
+  background: #f3ead4;
+}
+.package-detail-note {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #ece2cb;
+  font-size: 11px;
+  color: #8a7c5c;
+}
+@keyframes package-detail-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .events-calendar #eventCalendarModal .package-detail-popover {
+    animation: none;
+  }
+}

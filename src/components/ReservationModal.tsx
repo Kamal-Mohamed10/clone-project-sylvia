@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { EventItem } from "@/lib/types";
 import { cardTimeRange } from "@/lib/calendar";
 import { MAX_PARTY_SIZE } from "@/lib/validators";
-import { tiersForPartySize } from "@/lib/packages";
+import { tiersForPartySize, dishImage, type PackageMenu } from "@/lib/packages";
 
 type SubmitState =
   | { status: "idle" | "submitting" }
@@ -48,6 +49,23 @@ export function ReservationModal({
 
   if (!event) return null;
 
+  return <ReservationModalInner event={event} onClose={onClose} />;
+}
+
+function ReservationModalInner({
+  event,
+  onClose,
+}: {
+  event: EventItem;
+  onClose: () => void;
+}) {
+  const [dialogEl, setDialogEl] = useState<HTMLDivElement | null>(null);
+  // A dedicated, always-empty layer to portal the package preview into. Portaling
+  // straight into the dialog (which React also fills with content + close button)
+  // can throw removeChild on cleanup and tear down the whole modal; an empty
+  // container React owns but never adds siblings to avoids that.
+  const [popoverLayer, setPopoverLayer] = useState<HTMLDivElement | null>(null);
+
   return (
     <div
       aria-hidden="false"
@@ -61,9 +79,15 @@ export function ReservationModal({
           if (e.target === e.currentTarget) onClose();
         }}
       >
-        <div className="event-calendar-modal-dialog">
+        <div className="event-calendar-modal-dialog" ref={setDialogEl}>
           <div className="event-calendar-modal-content">
-            <ModalBody key={event.id} event={event} onClose={onClose} />
+            <ModalBody
+              key={event.id}
+              event={event}
+              onClose={onClose}
+              dialogEl={dialogEl}
+              popoverLayer={popoverLayer}
+            />
           </div>
           <button
             aria-label="Close event"
@@ -73,6 +97,7 @@ export function ReservationModal({
           >
             <span aria-hidden="true">×</span>
           </button>
+          <div className="package-popover-layer" ref={setPopoverLayer} />
         </div>
       </div>
     </div>
@@ -82,14 +107,55 @@ export function ReservationModal({
 function ModalBody({
   event,
   onClose,
+  dialogEl,
+  popoverLayer,
 }: {
   event: EventItem;
   onClose: () => void;
+  dialogEl: HTMLDivElement | null;
+  popoverLayer: HTMLDivElement | null;
 }) {
   const [partySize, setPartySize] = useState(2);
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [state, setState] = useState<SubmitState>({ status: "idle" });
   const formRef = useRef<HTMLFormElement>(null);
+
+  // Hover/focus preview of a package's dishes. The popover is portaled into the
+  // dialog (the one positioned ancestor that doesn't clip the content region —
+  // the media column and its scroll area both hide overflow) and placed from the
+  // hovered item's rect measured relative to the dialog.
+  const [preview, setPreview] = useState<{
+    menu: PackageMenu;
+    top: number;
+    left: number;
+    flip: boolean;
+  } | null>(null);
+
+  const openPreview = (
+    e: React.SyntheticEvent<HTMLButtonElement>,
+    menu: PackageMenu,
+  ) => {
+    if (!dialogEl) return;
+    const btn = e.currentTarget.getBoundingClientRect();
+    const box = dialogEl.getBoundingClientRect();
+    const POPOVER_W = 300;
+    const GAP = 10;
+    // Prefer the right of the item; flip to the left if it would overflow.
+    const flip = btn.right - box.left + GAP + POPOVER_W > box.width;
+    const left = flip
+      ? Math.max(GAP, btn.left - box.left - GAP - POPOVER_W)
+      : btn.right - box.left + GAP;
+    // Keep the card inside the dialog vertically. Its height grows with the dish
+    // list (hero photo + header chrome + one ~44px row per dish), so estimate it
+    // and clamp the top edge up as needed.
+    const estHeight = 150 + 140 + menu.sampleItems.length * 44;
+    const top = Math.min(
+      Math.max(GAP, btn.top - box.top),
+      Math.max(GAP, box.height - estHeight - GAP),
+    );
+    setPreview({ menu, top, left, flip });
+  };
+  const closePreview = () => setPreview(null);
 
   const availableTiers = tiersForPartySize(partySize);
   const availableMenuIds = availableTiers.flatMap((t) =>
@@ -195,6 +261,10 @@ function ModalBody({
                             onClick={() =>
                               setSelectedPackage(active ? null : m.id)
                             }
+                            onMouseEnter={(e) => openPreview(e, m)}
+                            onFocus={(e) => openPreview(e, m)}
+                            onMouseLeave={closePreview}
+                            onBlur={closePreview}
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
@@ -234,6 +304,54 @@ function ModalBody({
             )}
           </div>
         )}
+        {preview &&
+          popoverLayer &&
+          createPortal(
+            <div
+              className={`package-detail-popover${preview.flip ? " is-flipped" : ""}`}
+              role="tooltip"
+              style={{ top: preview.top, left: preview.left }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                className="package-detail-photo"
+                src={preview.menu.imageUrl}
+                alt=""
+              />
+              <div className="package-detail-body">
+                <div className="package-detail-head">
+                  <span className="package-detail-name">
+                    {preview.menu.name}
+                  </span>
+                  <span className="package-detail-price">
+                    ${preview.menu.pricePerPerson}
+                    <small>/guest</small>
+                  </span>
+                </div>
+                <div className="package-detail-summary">
+                  {preview.menu.summary}
+                </div>
+                <span className="package-detail-label">On the menu</span>
+                <ul className="package-detail-list">
+                  {preview.menu.sampleItems.map((item) => (
+                    <li key={item}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        className="package-detail-dish-thumb"
+                        src={dishImage(item, preview.menu.imageUrl)}
+                        alt=""
+                      />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+                {preview.menu.note && (
+                  <div className="package-detail-note">{preview.menu.note}</div>
+                )}
+              </div>
+            </div>,
+            popoverLayer,
+          )}
       </div>
 
       {/* Right column: event details + reservation form. */}
