@@ -1,6 +1,7 @@
 import { z } from "zod";
+import { findPackageMenu } from "./packages";
 
-export const MAX_PARTY_SIZE = 20;
+export const MAX_PARTY_SIZE = 200;
 
 /**
  * Validation for a reservation submission. Inputs arrive as strings from a
@@ -38,6 +39,30 @@ export const ReservationSchema = z.object({
     .max(500, "Please keep requests under 500 characters.")
     .optional()
     .transform((v) => (v ? v : null)),
+  packageId: z
+    .string()
+    .trim()
+    .optional()
+    .nullable()
+    .transform((v) => (v ? v : null)),
+}).superRefine((data, ctx) => {
+  if (data.packageId == null) return;
+  const found = findPackageMenu(data.packageId);
+  if (!found) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["packageId"],
+      message: "That menu isn't available.",
+    });
+    return;
+  }
+  if (data.partySize < found.tier.minGuests) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["packageId"],
+      message: `${found.tier.name} menus need at least ${found.tier.minGuests} guests.`,
+    });
+  }
 });
 
 export type ReservationInput = z.infer<typeof ReservationSchema>;

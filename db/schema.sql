@@ -21,11 +21,18 @@ CREATE TABLE IF NOT EXISTS reservations (
   guest_name        TEXT NOT NULL,
   email             TEXT NOT NULL,
   phone             TEXT,
-  party_size        INTEGER NOT NULL CHECK (party_size BETWEEN 1 AND 20),
+  party_size        INTEGER NOT NULL,
   reservation_date  DATE NOT NULL,
   notes             TEXT,
+  package           TEXT,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Idempotent upgrades for installs created before group packages / the 200 cap.
+ALTER TABLE reservations ADD COLUMN IF NOT EXISTS package TEXT;
+ALTER TABLE reservations DROP CONSTRAINT IF EXISTS reservations_party_size_check;
+ALTER TABLE reservations
+  ADD CONSTRAINT reservations_party_size_check CHECK (party_size BETWEEN 1 AND 200);
 
 CREATE INDEX IF NOT EXISTS idx_reservations_event ON reservations(event_id);
 CREATE INDEX IF NOT EXISTS idx_reservations_date  ON reservations(reservation_date);

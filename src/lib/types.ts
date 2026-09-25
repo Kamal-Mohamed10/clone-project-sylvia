@@ -31,5 +31,7 @@ export type Reservation = {
   partySize: number;
   reservationDate: string;
   notes: string | null;
+  /** Selected group package id (see lib/packages), null for a plain reservation. */
+  package: string | null;
   createdAt: string;
 };

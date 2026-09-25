@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { EventItem } from "@/lib/types";
 import { cardTimeRange } from "@/lib/calendar";
 import { MAX_PARTY_SIZE } from "@/lib/validators";
+import { tiersForPartySize } from "@/lib/packages";
 
 type SubmitState =
   | { status: "idle" | "submitting" }
@@ -62,15 +63,7 @@ export function ReservationModal({
       >
         <div className="event-calendar-modal-dialog">
           <div className="event-calendar-modal-content">
-            <div className="event-calendar-modal-media" aria-hidden="true">
-              {event.imageUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={event.imageUrl} alt="" />
-              )}
-            </div>
-            <div className="event-calendar-modal-text">
-              <ModalBody key={event.id} event={event} onClose={onClose} />
-            </div>
+            <ModalBody key={event.id} event={event} onClose={onClose} />
           </div>
           <button
             aria-label="Close event"
@@ -94,8 +87,20 @@ function ModalBody({
   onClose: () => void;
 }) {
   const [partySize, setPartySize] = useState(2);
+  const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [state, setState] = useState<SubmitState>({ status: "idle" });
   const formRef = useRef<HTMLFormElement>(null);
+
+  const availableTiers = tiersForPartySize(partySize);
+  const availableMenuIds = availableTiers.flatMap((t) =>
+    t.menus.map((m) => m.id),
+  );
+  // A stored menu only counts while the party still qualifies for it, so the
+  // choice self-clears if the size drops below that tier's minimum.
+  const effectivePackage =
+    selectedPackage && availableMenuIds.includes(selectedPackage)
+      ? selectedPackage
+      : null;
 
   const fieldError = (name: string) =>
     state.status === "error" ? state.fieldErrors?.[name] : undefined;
@@ -113,6 +118,7 @@ function ModalBody({
       partySize,
       reservationDate: String(fd.get("reservationDate") ?? ""),
       notes: String(fd.get("notes") ?? ""),
+      packageId: effectivePackage,
     };
     try {
       const res = await fetch("/api/reservations", {
@@ -140,8 +146,100 @@ function ModalBody({
 
   return (
     <>
-      {/* Event details (mirrors the original modal text content) */}
-      <h2>{event.title}</h2>
+      {/* Left column: the event picture in its OWN fixed-size box, with the
+          large-party menu in a SEPARATE box beneath it. The two are siblings,
+          never the same box, so the menu can grow/shrink/appear without ever
+          changing the photo's size. */}
+      <div className="event-calendar-modal-media">
+        <div className="modal-media-photo">
+          {event.imageUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={event.imageUrl} alt="" />
+          )}
+        </div>
+        {state.status !== "success" && availableTiers.length > 0 && (
+          <div className="reservation-field modal-media-packages">
+            <span className="reservation-label">
+              Event menus for {partySize} guests
+            </span>
+            <div className="reservation-packages">
+              <div className="reservation-packages-head">
+                Optional: select your large party package served in your private room!
+              </div>
+              <div className="reservation-packages-scroll">
+                {availableTiers.map((tier) => (
+                  <div className="package-tier" key={tier.id}>
+                    <div className="package-tier-head">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        className="package-tier-photo"
+                        src={tier.imageUrl}
+                        alt=""
+                      />
+                      <div className="package-tier-heading">
+                        <span className="package-tier-name">{tier.name}</span>
+                        <span className="reservation-package-min">
+                          {tier.minGuests}+
+                        </span>
+                      </div>
+                    </div>
+                    <div className="package-tier-menus">
+                      {tier.menus.map((m) => {
+                        const active = effectivePackage === m.id;
+                        return (
+                          <button
+                            key={m.id}
+                            type="button"
+                            className="reservation-package"
+                            aria-pressed={active}
+                            onClick={() =>
+                              setSelectedPackage(active ? null : m.id)
+                            }
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              className="reservation-package-thumb"
+                              src={m.imageUrl}
+                              alt=""
+                            />
+                            <span className="reservation-package-body">
+                              <span className="reservation-package-top">
+                                <span className="reservation-package-name">
+                                  {m.name}
+                                </span>
+                                <span className="reservation-package-price">
+                                  ${m.pricePerPerson}
+                                  <small>/guest</small>
+                                </span>
+                              </span>
+                              <span className="reservation-package-summary">
+                                {m.summary}
+                              </span>
+                              {m.note && (
+                                <span className="reservation-package-note">
+                                  {m.note}
+                                </span>
+                              )}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {fieldError("packageId") && (
+              <p className="reservation-error">{fieldError("packageId")}</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Right column: event details + reservation form. */}
+      <div className="event-calendar-modal-text">
+        {/* Event details (mirrors the original modal text content) */}
+        <h2>{event.title}</h2>
       <p className="event-main-text event-day">{event.dayLabel}</p>
       <div
         className="event-info-text"
@@ -167,6 +265,10 @@ function ModalBody({
       ) : (
         <form ref={formRef} className="reservation-form" onSubmit={onSubmit} noValidate>
           <h3 className="reservation-heading">Reserve a table</h3>
+          <p className="reservation-subhead">
+            Groups of 11 or more can book a large party package in a private
+            room — just set your party size below.
+          </p>
 
           {state.status === "error" && !state.fieldErrors && (
             <p className="reservation-alert" role="alert">
@@ -174,84 +276,90 @@ function ModalBody({
             </p>
           )}
 
-          <div className="reservation-field">
-            <span className="reservation-label">How many in your party?</span>
-            <div className="party-stepper">
-              <button
-                type="button"
-                aria-label="Decrease party size"
-                onClick={() => setPartySize((n) => Math.max(1, n - 1))}
-                disabled={partySize <= 1}
-              >
-                −
-              </button>
-              <input
-                type="number"
-                className="party-count"
-                aria-label="Party size"
-                inputMode="numeric"
-                min={1}
-                max={MAX_PARTY_SIZE}
-                value={partySize === 0 ? "" : partySize}
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  if (raw === "") {
-                    setPartySize(0);
-                    return;
+          <div className="reservation-row reservation-row-top">
+            <div className="reservation-field">
+              <span className="reservation-label">How many in your party?</span>
+              <div className="party-stepper">
+                <button
+                  type="button"
+                  aria-label="Decrease party size"
+                  onClick={() => setPartySize((n) => Math.max(1, n - 1))}
+                  disabled={partySize <= 1}
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  className="party-count"
+                  aria-label="Party size"
+                  inputMode="numeric"
+                  min={1}
+                  max={MAX_PARTY_SIZE}
+                  value={partySize === 0 ? "" : partySize}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === "") {
+                      setPartySize(0);
+                      return;
+                    }
+                    const n = Math.floor(Number(raw));
+                    if (!Number.isNaN(n)) {
+                      setPartySize(Math.min(MAX_PARTY_SIZE, Math.max(1, n)));
+                    }
+                  }}
+                  onBlur={() => setPartySize((n) => (n < 1 ? 1 : n))}
+                />
+                <button
+                  type="button"
+                  aria-label="Increase party size"
+                  onClick={() =>
+                    setPartySize((n) => Math.min(MAX_PARTY_SIZE, n + 1))
                   }
-                  const n = Math.floor(Number(raw));
-                  if (!Number.isNaN(n)) {
-                    setPartySize(Math.min(MAX_PARTY_SIZE, Math.max(1, n)));
-                  }
-                }}
-                onBlur={() => setPartySize((n) => (n < 1 ? 1 : n))}
-              />
-              <button
-                type="button"
-                aria-label="Increase party size"
-                onClick={() => setPartySize((n) => Math.min(MAX_PARTY_SIZE, n + 1))}
-                disabled={partySize >= MAX_PARTY_SIZE}
-              >
-                +
-              </button>
-              <span className="party-suffix">
-                {partySize === 1 ? "guest" : "guests"}
-              </span>
+                  disabled={partySize >= MAX_PARTY_SIZE}
+                >
+                  +
+                </button>
+                <span className="party-suffix">
+                  {partySize === 1 ? "guest" : "guests"}
+                </span>
+              </div>
+              <p className="reservation-hint">
+                Parties over {MAX_PARTY_SIZE}? Please call (212) 996-0660.
+              </p>
             </div>
-            <p className="reservation-hint">
-              Parties over {MAX_PARTY_SIZE}? Please call (212) 996-0660.
-            </p>
-          </div>
 
-          <div className="reservation-field">
-            <label className="reservation-label" htmlFor="reservationDate">
-              Date of visit
-            </label>
-            {event.recurring ? (
-              <input
-                id="reservationDate"
-                name="reservationDate"
-                type="date"
-                className="reservation-date"
-                required
-                defaultValue={nextOccurrence(event.startDate)}
-                min={todayISO()}
-              />
-            ) : (
-              <input
-                id="reservationDate"
-                name="reservationDate"
-                type="date"
-                className="reservation-date"
-                required
-                defaultValue={event.startDate}
-                min={event.startDate}
-                max={event.startDate}
-              />
-            )}
-            {fieldError("reservationDate") && (
-              <p className="reservation-error">{fieldError("reservationDate")}</p>
-            )}
+            <div className="reservation-field">
+              <label className="reservation-label" htmlFor="reservationDate">
+                Date of visit
+              </label>
+              {event.recurring ? (
+                <input
+                  id="reservationDate"
+                  name="reservationDate"
+                  type="date"
+                  className="reservation-date"
+                  required
+                  defaultValue={nextOccurrence(event.startDate)}
+                  min={todayISO()}
+                />
+              ) : (
+                <input
+                  id="reservationDate"
+                  name="reservationDate"
+                  type="date"
+                  className="reservation-date"
+                  required
+                  defaultValue={event.startDate}
+                  min={event.startDate}
+                  max={event.startDate}
+                />
+              )}
+              {fieldError("reservationDate") && (
+                <p className="reservation-error">
+                  {fieldError("reservationDate")}
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="reservation-field">
@@ -325,6 +433,7 @@ function ModalBody({
           </button>
         </form>
       )}
+      </div>
     </>
   );
 }

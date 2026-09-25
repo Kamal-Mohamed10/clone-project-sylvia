@@ -8,8 +8,8 @@ export async function createReservation(
 ): Promise<number> {
   const rows = await query<{ id: number }>(
     `INSERT INTO reservations
-       (event_id, guest_name, email, phone, party_size, reservation_date, notes)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+       (event_id, guest_name, email, phone, party_size, reservation_date, notes, package)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING id`,
     [
       data.eventId,
@@ -19,6 +19,7 @@ export async function createReservation(
       data.partySize,
       data.reservationDate,
       data.notes,
+      data.packageId,
     ],
   );
   return rows[0].id;

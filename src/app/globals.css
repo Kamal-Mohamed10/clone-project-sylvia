@@ -8,62 +8,82 @@ body {
   padding: 0;
 }
 
-/* Single-event modal (desktop): stack the layout so the image sits across the
-   top at full modal width and half the viewport height, centered — this shows
-   every image consistently instead of side-cropping some of them. */
+/* Single-event modal: the left media column is a flex stack — the event picture
+   is pinned at the top and never moves, while the large-party menu beneath it is
+   its own scroll region. The column itself never scrolls, so image and menu are
+   independent (the picture stays put while you scroll the packages). */
+.events-calendar #eventCalendarModal .event-calendar-modal-media {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+/* The photo lives in its OWN fixed-height box, a separate flex item from the
+   selector below it. flex: 0 0 350px locks the box height (no grow, no shrink),
+   so the selector appearing/changing can never resize the photo. Scoped under
+   the modal id so it outranks the vendored clone stylesheet (loads after this
+   file at equal specificity). */
+.events-calendar #eventCalendarModal .modal-media-photo {
+  flex: 0 0 350px;
+  overflow: hidden;
+}
+.events-calendar #eventCalendarModal .modal-media-photo > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* The menu panel sitting under the picture inside the left column. It is the
+   only scrollable part of the column, so the picture above it stays fixed. */
+.modal-media-packages {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px;
+}
+.modal-media-packages .reservation-label {
+  color: #4a3610;
+}
+
+/* Single-event modal (desktop): picture + large-party menu on the LEFT, event
+   details + reservation form on the RIGHT. */
 @media (min-width: 768px) {
-  .events-calendar .event-calendar-modal-content {
-    flex-direction: column;
-    align-items: stretch;
+  .events-calendar #eventCalendarModal .event-calendar-modal-media {
+    flex: 0 0 42%;
+    align-self: stretch;
+    background: #f5c552; /* gold, matches the info panel */
+    overflow: hidden; /* column fixed; only the menu below scrolls */
   }
-  .events-calendar .event-calendar-modal-media {
-    flex: 0 0 auto;
-    width: 100%;
-    height: 40vh;
-    position: relative;
+  .events-calendar #eventCalendarModal .modal-media-photo {
+    flex: 0 0 350px; /* same locked height on desktop */
   }
-  .events-calendar .event-calendar-modal-media img {
-    object-position: center center;
+  /* The menu panel owns the scroll now, so let its inner list flow naturally
+     rather than nesting a second short scroll area inside it. */
+  .modal-media-packages .reservation-packages-scroll {
+    max-height: none;
   }
-  /* Give the form more vertical room under the taller stacked image. */
+  /* Let the form scroll within the fixed-height dialog so the submit button
+     stays reachable. */
   .events-calendar .event-calendar-modal-text {
-    padding: 14px 22px 12px 22px;
+    padding: 14px 22px 18px 22px;
+    justify-content: flex-start;
+    align-items: stretch;
+    overflow-y: auto;
+    min-height: 0;
   }
   /* Tighten the event detail block that sits above the form. */
   .events-calendar .event-calendar-modal-title {
     margin: 2px auto 6px;
   }
-  /* Fade the image's bottom edge into the gold (#F5C552) info panel below,
-     so there's a soft transition instead of a hard horizontal seam. */
-  .events-calendar .event-calendar-modal-media::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 22%;
-    background: linear-gradient(
-      to bottom,
-      rgba(245, 197, 82, 0) 0%,
-      #f5c552 100%
-    );
-    pointer-events: none;
-  }
-  /* Fade the image's right edge into gold as well. */
-  .events-calendar .event-calendar-modal-media::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    right: 0;
-    width: 10%;
-    z-index: 1;
-    background: linear-gradient(
-      to right,
-      rgba(245, 197, 82, 0) 0%,
-      #f5c552 100%
-    );
-    pointer-events: none;
+}
+
+/* On mobile the left column stacks on top; drop the vendor image mask/height so
+   the menu beneath the picture isn't clipped or faded out. */
+@media (max-width: 767px) {
+  .events-calendar #eventCalendarModal .event-calendar-modal-media {
+    height: auto;
+    mask-image: none;
+    -webkit-mask-image: none;
   }
 }
 
@@ -115,9 +135,15 @@ body {
   text-align: left;
 }
 .reservation-heading {
-  margin: 0 0 8px;
+  margin: 0 0 4px;
   font-size: 17px;
   color: #2d2440;
+}
+.reservation-subhead {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: #6b5d3e;
 }
 .reservation-field {
   margin-bottom: 8px;
@@ -129,6 +155,11 @@ body {
 .reservation-row .reservation-field {
   flex: 1 1 0;
   min-width: 0;
+}
+/* Guest stepper + date share a row; top-align so the wrapping "call us" hint
+   under the stepper doesn't drag the date field down with it. */
+.reservation-row-top {
+  align-items: flex-start;
 }
 .reservation-label {
   display: block;
@@ -277,4 +308,140 @@ body {
 }
 .reservation-success h3 {
   margin: 0 0 6px;
+}
+
+/* Group-package panel — revealed in the reservation form once the party size
+   reaches the smallest catering tier (11+). A fixed-height scroll area keeps
+   the (potentially long) list from stretching the modal. */
+.reservation-packages {
+  border: 1px solid #e4dcc9;
+  border-radius: 8px;
+  background: #faf6ec;
+  overflow: hidden;
+}
+.reservation-packages-head {
+  padding: 7px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #7a5a1e;
+  background: #f3ead4;
+  border-bottom: 1px solid #e4dcc9;
+}
+.reservation-packages-scroll {
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+/* Tier grouping (Large Party 11+, On-Premise Private Events 25+). */
+.package-tier-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+/* id-scoped: the vendor clone stylesheet sets `.event-calendar-modal-media img`
+   to width/height 100% (specificity 0,2,1), which otherwise blows these small
+   thumbnails up to the full column width. The id (1,2,0) outranks it. */
+.events-calendar #eventCalendarModal .package-tier-photo {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  border-radius: 4px;
+  object-fit: cover;
+}
+.package-tier-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.package-tier-name {
+  font-weight: 700;
+  font-size: 10px;
+  color: #2d2440;
+}
+.package-tier-menus {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.reservation-package {
+  display: flex;
+  gap: 5px;
+  width: 100%;
+  text-align: left;
+  border: 1px solid #d8cdb4;
+  border-radius: 5px;
+  background: #fff;
+  padding: 3px 5px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.12s, box-shadow 0.12s, background 0.12s;
+}
+.reservation-package:hover {
+  border-color: #b8892b;
+}
+.reservation-package[aria-pressed="true"] {
+  border-color: #b8892b;
+  box-shadow: inset 0 0 0 1px #b8892b;
+  background: #fffdf6;
+}
+.events-calendar #eventCalendarModal .reservation-package-thumb {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  border-radius: 4px;
+  object-fit: cover;
+}
+.reservation-package-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.reservation-package-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.reservation-package-name {
+  font-weight: 700;
+  font-size: 10px;
+  color: #2d2440;
+}
+.reservation-package-price {
+  flex: 0 0 auto;
+  font-weight: 700;
+  font-size: 10px;
+  color: #b8892b;
+}
+.reservation-package-price small {
+  font-weight: 600;
+  font-size: 8px;
+  color: #8a7c5c;
+}
+.reservation-package-summary {
+  font-size: 9px;
+  line-height: 1.2;
+  color: #5c5145;
+}
+.reservation-package-note {
+  font-size: 8px;
+  color: #8a7c5c;
+}
+.reservation-package-min {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: #7a5a1e;
+  background: #f3ead4;
+  border-radius: 999px;
+  padding: 2px 8px;
 }

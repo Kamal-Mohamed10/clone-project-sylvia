@@ -1,6 +1,7 @@
 import { ReservationSchema } from "@/lib/validators";
 import { createReservation } from "@/lib/reservations";
 import { getEventById } from "@/lib/events";
+import { findPackageMenu } from "@/lib/packages";
 
 type ApiResponse =
   | { success: true; id: number; message: string }
@@ -35,10 +36,15 @@ export async function POST(request: Request): Promise<Response> {
 
   try {
     const id = await createReservation(parsed.data);
+    const found = parsed.data.packageId
+      ? findPackageMenu(parsed.data.packageId)
+      : null;
     return json({
       success: true,
       id,
-      message: `Table reserved for ${parsed.data.partySize} — see you at Sylvia's!`,
+      message: `Table reserved for ${parsed.data.partySize}${
+        found ? ` · ${found.menu.name}` : ""
+      } — see you at Sylvia's!`,
     });
   } catch (err) {
     console.error("Failed to create reservation:", err);
