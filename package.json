@@ -1,0 +1,35 @@
+{
+  "name": "sylvias-events-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "vitest run",
+    "db:migrate": "node --experimental-strip-types scripts/migrate.mjs"
+  },
+  "dependencies": {
+    "imagesloaded": "^5.0.0",
+    "masonry-layout": "^4.2.2",
+    "next": "16.3.6",
+    "pg": "^8.23.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "^0.0.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/imagesloaded": "^4.1.7",
+    "@types/masonry-layout": "^4.2.8",
+    "@types/node": "^24.13.6",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.6",
+    "typescript": "^5",
+    "vitest": "^5.0.1"
+  }
+}
