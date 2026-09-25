@@ -182,6 +182,14 @@ body {
   font-size: 15px;
   font-family: inherit;
   background: #fff;
+  /* Typed text was inheriting a light color from the modal; force the app's
+     dark ink so entered values are high-contrast on the white field. */
+  color: #2d2440;
+}
+.reservation-form input::placeholder,
+.reservation-form textarea::placeholder {
+  color: #9a917f;
+  opacity: 1; /* Firefox dims placeholders by default */
 }
 .reservation-form input:focus,
 .reservation-form textarea:focus {
