@@ -5,12 +5,24 @@ import { createPortal } from "react-dom";
 import type { EventItem } from "@/lib/types";
 import { cardTimeRange } from "@/lib/calendar";
 import { MAX_PARTY_SIZE } from "@/lib/validators";
-import { tiersForPartySize, dishImage, type PackageMenu } from "@/lib/packages";
+import {
+  tiersForPartySize,
+  dishImage,
+  findPackageMenu,
+  depositCents,
+  type PackageMenu,
+} from "@/lib/packages";
+import { DepositCheckout } from "./DepositCheckout";
 
 type SubmitState =
   | { status: "idle" | "submitting" }
   | { status: "error"; message: string; fieldErrors?: Record<string, string> }
-  | { status: "success"; message: string; partySize: number };
+  | { status: "success"; message: string; partySize: number }
+  | { status: "checkout"; clientSecret: string; deposit: number; partySize: number }
+  | { status: "paid"; deposit: number; partySize: number };
+
+const usd = (cents: number) =>
+  (cents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
 
 /** Next upcoming occurrence of the event's weekday, as YYYY-MM-DD. */
 function nextOccurrence(startDate: string): string {
@@ -186,21 +198,33 @@ function ModalBody({
       notes: String(fd.get("notes") ?? ""),
       packageId: effectivePackage,
     };
+    // Package bookings collect a deposit first (embedded Stripe Checkout);
+    // free reservations are confirmed directly.
+    const endpoint = effectivePackage ? "/api/checkout" : "/api/reservations";
     try {
-      const res = await fetch("/api/reservations", {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (data.success) {
-        setState({ status: "success", message: data.message, partySize });
-      } else {
+      if (!data.success) {
         setState({
           status: "error",
           message: data.error ?? "Something went wrong.",
           fieldErrors: data.fieldErrors,
         });
+        return;
+      }
+      if (effectivePackage) {
+        setState({
+          status: "checkout",
+          clientSecret: data.clientSecret,
+          deposit: data.depositCents,
+          partySize,
+        });
+      } else {
+        setState({ status: "success", message: data.message, partySize });
       }
     } catch {
       setState({
@@ -209,6 +233,12 @@ function ModalBody({
       });
     }
   }
+
+  const depositPreview = (() => {
+    if (!effectivePackage) return null;
+    const found = findPackageMenu(effectivePackage);
+    return found ? depositCents(found.menu.pricePerPerson, partySize) : null;
+  })();
 
   return (
     <>
@@ -223,7 +253,10 @@ function ModalBody({
             <img src={event.imageUrl} alt="" />
           )}
         </div>
-        {state.status !== "success" && availableTiers.length > 0 && (
+        {(state.status === "idle" ||
+          state.status === "submitting" ||
+          state.status === "error") &&
+          availableTiers.length > 0 && (
           <div className="reservation-field modal-media-packages">
             <span className="reservation-label">
               Event menus for {partySize} guests
@@ -368,16 +401,56 @@ function ModalBody({
       </p>
 
       {/* Reservation feature */}
-      {state.status === "success" ? (
+      {state.status === "success" || state.status === "paid" ? (
         <div className="reservation-success" role="status">
           <div className="reservation-success-badge">✓</div>
-          <h3>Table reserved!</h3>
-          <p>{state.message}</p>
-          <p className="reservation-success-sub">
-            A confirmation will follow by email.
-          </p>
+          {state.status === "paid" ? (
+            <>
+              <h3>Deposit received!</h3>
+              <p>
+                Your {usd(state.deposit)} deposit is in — your table for{" "}
+                {state.partySize} at Sylvia&apos;s is confirmed.
+              </p>
+              <p className="reservation-success-sub">
+                A confirmation and balance details will follow by email.
+              </p>
+            </>
+          ) : (
+            <>
+              <h3>Table reserved!</h3>
+              <p>{state.message}</p>
+              <p className="reservation-success-sub">
+                A confirmation will follow by email.
+              </p>
+            </>
+          )}
           <button type="button" className="reservation-submit" onClick={onClose}>
             Done
+          </button>
+        </div>
+      ) : state.status === "checkout" ? (
+        <div className="reservation-checkout">
+          <h3 className="reservation-heading">Secure your booking</h3>
+          <p className="reservation-subhead">
+            A {usd(state.deposit)} deposit confirms your table for{" "}
+            {state.partySize}. The balance is settled at the restaurant.
+          </p>
+          <DepositCheckout
+            clientSecret={state.clientSecret}
+            onComplete={() =>
+              setState({
+                status: "paid",
+                deposit: state.deposit,
+                partySize: state.partySize,
+              })
+            }
+          />
+          <button
+            type="button"
+            className="reservation-checkout-back"
+            onClick={() => setState({ status: "idle" })}
+          >
+            ← Back to details
           </button>
         </div>
       ) : (
@@ -546,8 +619,12 @@ function ModalBody({
             disabled={state.status === "submitting"}
           >
             {state.status === "submitting"
-              ? "Reserving…"
-              : `Confirm reservation for ${partySize}`}
+              ? depositPreview != null
+                ? "Starting checkout…"
+                : "Reserving…"
+              : depositPreview != null
+                ? `Reserve with ${usd(depositPreview)} deposit`
+                : `Confirm reservation for ${partySize}`}
           </button>
         </form>
       )}

@@ -42,3 +42,6 @@ next-env.d.ts
 
 # local demo reservations (no DB)
 .reservations.local.json
+
+# local stripe sandbox keys
+.stripe-sandbox.toml

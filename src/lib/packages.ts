@@ -192,6 +192,17 @@ export function tiersForPartySize(n: number): ServiceTier[] {
   );
 }
 
+/** Fraction of the package total collected up front as a booking deposit. */
+export const DEPOSIT_RATE = 0.2;
+
+/**
+ * Deposit due for a package booking, in integer cents (Stripe's unit).
+ * Computed from server-trusted menu prices — never from a client-sent amount.
+ */
+export function depositCents(pricePerPerson: number, partySize: number): number {
+  return Math.round(pricePerPerson * partySize * 100 * DEPOSIT_RATE);
+}
+
 /** Look up a menu by id along with its owning tier (for validation / labels). */
 export function findPackageMenu(
   id: string,
