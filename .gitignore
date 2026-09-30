@@ -45,3 +45,6 @@ next-env.d.ts
 
 # local stripe sandbox keys
 .stripe-sandbox.toml
+
+# personal learning/orientation notes, not project docs
+/LEARNING.md
