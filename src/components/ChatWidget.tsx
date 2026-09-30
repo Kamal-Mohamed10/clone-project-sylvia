@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useChat } from "@ai-sdk/react";
 import { findCitedMenuItems, menuHref } from "@/lib/menu";
+import { findCitedDrinkItems, type DrinkItem } from "@/lib/drinks";
 
 /**
  * Sylvia's Concierge chat widget: a floating launcher + slide-up panel, mounted
@@ -127,9 +128,11 @@ export default function ChatWidget() {
               messages.map((m) => {
                 const text = messageText(m.parts);
                 if (!text) return null; // skip tool-only steps
-                // Only card dishes that have a photo — every shown card has a pic + link.
+                // Only card dishes/drinks that have a photo — every shown card has a pic + link.
                 const cited =
                   m.role === "assistant" ? findCitedMenuItems(text).filter((i) => i.image) : [];
+                const citedDrinks: DrinkItem[] =
+                  m.role === "assistant" ? findCitedDrinkItems(text).filter((d) => d.image) : [];
                 const mentionedLinks =
                   m.role === "assistant" ? findMentionedPageLinks(text) : [];
                 return (
@@ -137,7 +140,7 @@ export default function ChatWidget() {
                     <div className={`sc-row sc-${m.role}`}>
                       <div className="sc-bubble">{text}</div>
                     </div>
-                    {cited.length > 0 && (
+                    {(cited.length > 0 || citedDrinks.length > 0) && (
                       <div className="sc-cards">
                         {cited.map((item) => (
                           // Client-side nav (not a hard <a>) so this widget — mounted
@@ -157,6 +160,23 @@ export default function ChatWidget() {
                             )}
                             <span className="sc-card-name">{item.name}</span>
                             {item.price > 0 && <span className="sc-card-price">${item.price}</span>}
+                          </Link>
+                        ))}
+                        {citedDrinks.map((item) => (
+                          // Drinks have no individual page — every card points at the
+                          // full drink menu, same client-side-nav reasoning as above.
+                          <Link
+                            key={item.slug}
+                            className="sc-card"
+                            href="/drinks"
+                            title={`View ${item.name} on the drink menu`}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img className="sc-card-img" src={item.image} alt={item.name} />
+                            <span className="sc-card-name">{item.name}</span>
+                            {item.price != null && item.price > 0 && (
+                              <span className="sc-card-price">${item.price}</span>
+                            )}
                           </Link>
                         ))}
                       </div>
@@ -246,14 +266,14 @@ const scopedCss = `
 #sylvias-concierge { position: fixed; z-index: 2147483000; }
 #sylvias-concierge * { box-sizing: border-box; }
 
-/* Same column as .sc-panel (right:20px, same width), reaching ~18px into
+/* Same column as .sc-panel (right:20px, same width), reaching ~6px into
    the navbar's bottom edge (--nav-bottom, kept live by NavScroll — the nav
    shrinks on scroll, so a fixed px guess drifts out of sync with it) down
    to the page bottom — just the strip above/below/behind the panel, not
    the whole page. Light touch: you can still make out shapes, just not
    read them. */
 #sylvias-concierge .sc-backdrop {
-  position: fixed; top: calc(var(--nav-bottom, 140px) - 18px); right: 20px; bottom: 0;
+  position: fixed; top: calc(var(--nav-bottom, 140px) - 6px); right: 20px; bottom: 0;
   width: min(380px, calc(100vw - 40px));
   background: rgba(20,14,10,.22);
   backdrop-filter: blur(3px);
