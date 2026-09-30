@@ -18,8 +18,9 @@ import {
   checkAvailability,
   createTableReservation,
   findReservations,
+  rescheduleTableReservation,
 } from "@/lib/availability";
-import { TableReservationSchema } from "@/lib/validators";
+import { RescheduleReservationSchema, TableReservationSchema } from "@/lib/validators";
 
 // The tool loop and DB calls need Node; never statically cache this endpoint.
 export const runtime = "nodejs";
@@ -172,6 +173,38 @@ const tools = {
         return { ok: false, error: "Ask the guest for the email or phone the reservation was made under." };
       }
       const result = await cancelTableReservation({ reservationId, email, phone });
+      return result;
+    },
+  }),
+
+  reschedule_reservation: tool({
+    description:
+      "Move a standalone table reservation to a new date/time. Call check_reservation first to find the reservationId, and check_availability to confirm the new slot is open, before calling this. Call this ONLY after the guest explicitly confirms the new date/time. Requires the email or phone the reservation was made under (not just the id).",
+    inputSchema: z.object({
+      reservationId: z.number().int().describe("The id returned by check_reservation."),
+      email: z.string().optional().describe("Email the reservation was made under."),
+      phone: z.string().optional().describe("Phone number the reservation was made under."),
+      date: z.string().describe("New reservation date, YYYY-MM-DD."),
+      time: z.string().describe("New reservation time, HH:MM (24-hour)."),
+    }),
+    execute: async ({ reservationId, email, phone, date, time }) => {
+      if (!email && !phone) {
+        return { ok: false, error: "Ask the guest for the email or phone the reservation was made under." };
+      }
+      const parsed = RescheduleReservationSchema.safeParse({
+        reservationDate: date,
+        reservationTime: time,
+      });
+      if (!parsed.success) {
+        return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid new date/time." };
+      }
+      const result = await rescheduleTableReservation({
+        reservationId,
+        email,
+        phone,
+        reservationDate: parsed.data.reservationDate,
+        reservationTime: parsed.data.reservationTime,
+      });
       return result;
     },
   }),

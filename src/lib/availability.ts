@@ -337,6 +337,87 @@ export async function createTableReservation(
   });
 }
 
+export type RescheduleResult =
+  | { ok: true; reservationDate: string; reservationTime: string }
+  | { ok: false; reason: "not_found" | "closed" | "full"; seatsRemaining?: number };
+
+/**
+ * Moves a standalone table reservation to a new date/time in place (same id, same
+ * guest). Identity-guarded like cancelTableReservation. Re-checks capacity for the
+ * new slot inside a transaction, excluding the reservation's own current seats so
+ * moving to a nearby/overlapping time on the same day doesn't double-count them.
+ */
+export async function rescheduleTableReservation(input: {
+  reservationId: number;
+  email?: string;
+  phone?: string;
+  reservationDate: string;
+  reservationTime: string;
+}): Promise<RescheduleResult> {
+  if (!input.email && !input.phone) return { ok: false, reason: "not_found" };
+
+  const hhmm = input.reservationTime.slice(0, 5);
+  if (!isOpenSlot(input.reservationDate, hhmm)) {
+    return { ok: false, reason: "closed" };
+  }
+
+  return withTransaction(async (client) => {
+    await client.query("SELECT pg_advisory_xact_lock($1)", [
+      dayLockKey(input.reservationDate),
+    ]);
+
+    const conditions = ["id = $1", "status = 'booked'", "reservation_time IS NOT NULL"];
+    const params: (number | string)[] = [input.reservationId];
+    const identity: string[] = [];
+    if (input.email) {
+      params.push(input.email.trim().toLowerCase());
+      identity.push(`lower(email) = $${params.length}`);
+    }
+    if (input.phone) {
+      params.push(input.phone.trim());
+      identity.push(`phone = $${params.length}`);
+    }
+    conditions.push(`(${identity.join(" OR ")})`);
+
+    const existing = await client.query<{ id: number; party_size: number }>(
+      `SELECT id, party_size FROM reservations WHERE ${conditions.join(" AND ")}`,
+      params,
+    );
+    if (existing.rows.length === 0) {
+      return { ok: false as const, reason: "not_found" as const };
+    }
+    const partySize = existing.rows[0].party_size;
+
+    const booked = await client.query<{ reservation_time: string; party_size: number }>(
+      `SELECT reservation_time, party_size
+         FROM reservations
+        WHERE reservation_date = $1
+          AND status = 'booked'
+          AND reservation_time IS NOT NULL
+          AND id != $2`,
+      [input.reservationDate, input.reservationId],
+    );
+    const rows: BookedRow[] = booked.rows
+      .map((r) => ({ minutes: toMinutes(r.reservation_time), partySize: r.party_size }))
+      .filter((r): r is BookedRow => r.minutes !== null);
+
+    const seatsRemaining = totalSeats() - seatsBookedAt(rows, toMinutes(hhmm)!);
+    if (partySize > seatsRemaining) {
+      return { ok: false as const, reason: "full" as const, seatsRemaining };
+    }
+
+    await client.query(
+      `UPDATE reservations SET reservation_date = $1, reservation_time = $2 WHERE id = $3`,
+      [input.reservationDate, hhmm, input.reservationId],
+    );
+    return {
+      ok: true as const,
+      reservationDate: input.reservationDate,
+      reservationTime: hhmm,
+    };
+  });
+}
+
 export type CancelResult =
   | { ok: true }
   | { ok: false; reason: "not_found" };

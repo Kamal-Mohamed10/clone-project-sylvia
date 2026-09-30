@@ -4,6 +4,7 @@ import {
   checkAvailability,
   createTableReservation,
   findReservations,
+  rescheduleTableReservation,
   slotsForDate,
   weekdayOf,
 } from "./availability";
@@ -19,6 +20,15 @@ function futureFriday(): string {
 }
 
 const DATE = futureFriday();
+
+/** The Saturday right after DATE — also open, used as a reschedule target. */
+function nextDay(dateISO: string): string {
+  const [y, m, d] = dateISO.split("-").map(Number);
+  const next = new Date(y, m - 1, d + 1);
+  return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-${String(next.getDate()).padStart(2, "0")}`;
+}
+
+const DATE2 = nextDay(DATE);
 
 function book(partySize: number, time: string) {
   return createTableReservation({
@@ -43,7 +53,7 @@ describe.runIf(hasDb)("table availability + booking (integration)", () => {
 
   // Isolate on the synthetic test date so leftover rows can't skew capacity.
   beforeEach(async () => {
-    await query("DELETE FROM reservations WHERE reservation_date = $1", [DATE]);
+    await query("DELETE FROM reservations WHERE reservation_date IN ($1, $2)", [DATE, DATE2]);
   });
 
   afterAll(async () => {
@@ -154,5 +164,100 @@ describe.runIf(hasDb)("table availability + booking (integration)", () => {
 
     const noMatch = await findReservations({ name: "Race Bannon" });
     expect(noMatch.find((r) => r.id === result.id)).toBeUndefined();
+  });
+
+  it("reschedules a reservation to a new date/time when identity matches and the new slot fits", async () => {
+    const result = await book(4, "19:00");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const moved = await rescheduleTableReservation({
+      reservationId: result.id,
+      email: TEST_EMAIL,
+      reservationDate: DATE2,
+      reservationTime: "20:00",
+    });
+    expect(moved).toEqual({ ok: true, reservationDate: DATE2, reservationTime: "20:00" });
+
+    const rows = await findReservations({ email: TEST_EMAIL });
+    expect(rows).toHaveLength(1);
+    expect(rows[0].id).toBe(result.id);
+    expect(rows[0].reservationDate).toBe(DATE2);
+    expect(rows[0].reservationTime).toBe("20:00");
+  });
+
+  it("refuses to reschedule without a matching email/phone", async () => {
+    const result = await book(4, "19:00");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const wrongIdentity = await rescheduleTableReservation({
+      reservationId: result.id,
+      email: "nobody@example.com",
+      reservationDate: DATE2,
+      reservationTime: "20:00",
+    });
+    expect(wrongIdentity).toEqual({ ok: false, reason: "not_found" });
+
+    const noIdentity = await rescheduleTableReservation({
+      reservationId: result.id,
+      reservationDate: DATE2,
+      reservationTime: "20:00",
+    });
+    expect(noIdentity).toEqual({ ok: false, reason: "not_found" });
+  });
+
+  it("refuses to reschedule into a full or closed slot, leaving the original untouched", async () => {
+    const result = await book(4, "19:00");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    await createTableReservation({
+      guestName: "Other Guest",
+      email: "other@example.com",
+      phone: null,
+      partySize: 8,
+      reservationDate: DATE2,
+      reservationTime: "20:00",
+      notes: null,
+    }); // fills 8 of 10 seats on DATE2 at 20:00
+
+    const full = await rescheduleTableReservation({
+      reservationId: result.id,
+      email: TEST_EMAIL,
+      reservationDate: DATE2,
+      reservationTime: "20:00",
+    });
+    expect(full.ok).toBe(false);
+    if (full.ok) return;
+    expect(full.reason).toBe("full");
+    expect(full.seatsRemaining).toBe(2);
+
+    const closed = await rescheduleTableReservation({
+      reservationId: result.id,
+      email: TEST_EMAIL,
+      reservationDate: DATE2,
+      reservationTime: "23:00",
+    });
+    expect(closed).toEqual({ ok: false, reason: "closed" });
+
+    // Neither failed attempt should have moved the original reservation.
+    const rows = await findReservations({ email: TEST_EMAIL });
+    expect(rows.find((r) => r.id === result.id)?.reservationDate).toBe(DATE);
+  });
+
+  it("does not double-count its own seats when rescheduling within the same overlapping turn", async () => {
+    const result = await book(8, "19:00"); // 8 of 10 seats on DATE at 19:00
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    // Moving the same reservation to an overlapping time on the same day should
+    // succeed — its own 8 seats shouldn't count against itself.
+    const moved = await rescheduleTableReservation({
+      reservationId: result.id,
+      email: TEST_EMAIL,
+      reservationDate: DATE,
+      reservationTime: "19:30",
+    });
+    expect(moved).toEqual({ ok: true, reservationDate: DATE, reservationTime: "19:30" });
   });
 });

@@ -125,3 +125,14 @@ export const TableReservationSchema = z.object({
 });
 
 export type TableReservationInput = z.infer<typeof TableReservationSchema>;
+
+/** Validation for a chatbot reservation reschedule: just the new date/time. */
+export const RescheduleReservationSchema = z.object({
+  reservationDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Choose a date (YYYY-MM-DD).")
+    .refine((d) => d >= todayISO(), "That date is in the past."),
+  reservationTime: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/, "Choose a time (HH:MM, 24-hour)."),
+});
