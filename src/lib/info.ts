@@ -38,7 +38,7 @@ export const LINKS = {
   reservationsFallback: "https://resy.com/cities/new-york-ny/venues/sylvias-restaurant",
   orderOnline: "https://direct.chownow.com/order/22566/locations/32842",
   giftCards: "https://www.toasttab.com/sylvias-restaurant/giftcards",
-  catering: "https://sylviasrestaurant.com/cater",
+  catering: "/cater",
   privateParties: "https://sylviasrestaurant.com/parties",
   jobs: "https://sylviasrestaurant.isolvedhire.com/jobs/",
 } as const;

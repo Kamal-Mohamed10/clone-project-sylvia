@@ -28,10 +28,13 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  // Ensure the event actually exists (FK safety + friendly error).
-  const event = await getEventById(parsed.data.eventId);
-  if (!event) {
-    return json({ success: false, error: "That event could not be found." }, 404);
+  // Absent eventId means a standalone booking not tied to a calendar event —
+  // only validate one exists when it was actually given.
+  if (parsed.data.eventId) {
+    const event = await getEventById(parsed.data.eventId);
+    if (!event) {
+      return json({ success: false, error: "That event could not be found." }, 404);
+    }
   }
 
   try {

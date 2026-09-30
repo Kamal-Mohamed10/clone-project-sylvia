@@ -8,11 +8,20 @@ body {
   padding: 0;
 }
 
+/* PackageBookingForm's own wrapper — used both inside the event RSVP modal and
+   standalone on /cater. Its only job is to be the positioned ancestor the
+   package-preview popover (.package-popover-layer, a sibling) measures and
+   anchors against; visual chrome (dialog background, page section styling)
+   comes from whatever wraps it. */
+.package-booking-frame {
+  position: relative;
+}
+
 /* Single-event modal: the left media column is a flex stack — the event picture
    is pinned at the top and never moves, while the large-party menu beneath it is
    its own scroll region. The column itself never scrolls, so image and menu are
    independent (the picture stays put while you scroll the packages). */
-.events-calendar #eventCalendarModal .event-calendar-modal-media {
+.events-calendar .package-booking-frame .event-calendar-modal-media {
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -23,11 +32,11 @@ body {
    so the selector appearing/changing can never resize the photo. Scoped under
    the modal id so it outranks the vendored clone stylesheet (loads after this
    file at equal specificity). */
-.events-calendar #eventCalendarModal .modal-media-photo {
+.events-calendar .package-booking-frame .modal-media-photo {
   flex: 0 0 350px;
   overflow: hidden;
 }
-.events-calendar #eventCalendarModal .modal-media-photo > img {
+.events-calendar .package-booking-frame .modal-media-photo > img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -48,13 +57,13 @@ body {
 /* Single-event modal (desktop): picture + large-party menu on the LEFT, event
    details + reservation form on the RIGHT. */
 @media (min-width: 768px) {
-  .events-calendar #eventCalendarModal .event-calendar-modal-media {
+  .events-calendar .package-booking-frame .event-calendar-modal-media {
     flex: 0 0 42%;
     align-self: stretch;
     background: #f5c552; /* gold, matches the info panel */
     overflow: hidden; /* column fixed; only the menu below scrolls */
   }
-  .events-calendar #eventCalendarModal .modal-media-photo {
+  .events-calendar .package-booking-frame .modal-media-photo {
     flex: 0 0 350px; /* same locked height on desktop */
   }
   /* The menu panel owns the scroll now, so let its inner list flow naturally
@@ -80,7 +89,7 @@ body {
 /* On mobile the left column stacks on top; drop the vendor image mask/height so
    the menu beneath the picture isn't clipped or faded out. */
 @media (max-width: 767px) {
-  .events-calendar #eventCalendarModal .event-calendar-modal-media {
+  .events-calendar .package-booking-frame .event-calendar-modal-media {
     height: auto;
     mask-image: none;
     -webkit-mask-image: none;
@@ -378,7 +387,7 @@ body {
 /* id-scoped: the vendor clone stylesheet sets `.event-calendar-modal-media img`
    to width/height 100% (specificity 0,2,1), which otherwise blows these small
    thumbnails up to the full column width. The id (1,2,0) outranks it. */
-.events-calendar #eventCalendarModal .package-tier-photo {
+.events-calendar .package-booking-frame .package-tier-photo {
   width: 18px;
   height: 18px;
   flex: 0 0 auto;
@@ -422,7 +431,7 @@ body {
   box-shadow: inset 0 0 0 1px #b8892b;
   background: #fffdf6;
 }
-.events-calendar #eventCalendarModal .reservation-package-thumb {
+.events-calendar .package-booking-frame .reservation-package-thumb {
   width: 20px;
   height: 20px;
   flex: 0 0 auto;
@@ -481,7 +490,7 @@ body {
    positioned within it. inset:0 makes its box match the dialog, so coordinates
    measured against the dialog line up. Non-interactive so it never blocks the
    modal; the popover re-enables nothing (it's non-interactive too). */
-.events-calendar #eventCalendarModal .package-popover-layer {
+.events-calendar .package-booking-frame .package-popover-layer {
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -493,7 +502,7 @@ body {
    scroll area both hide overflow, so the card has to live outside them). The id
    scope outranks the vendored clone stylesheet. Pointer-events off so crossing
    the gap to the card can't steal the hover and cause flicker. */
-.events-calendar #eventCalendarModal .package-detail-popover {
+.events-calendar .package-booking-frame .package-detail-popover {
   position: absolute;
   z-index: 5;
   width: 300px;
@@ -507,12 +516,12 @@ body {
   transform-origin: left center;
   animation: package-detail-in 0.12s ease-out;
 }
-.events-calendar #eventCalendarModal .package-detail-popover.is-flipped {
+.events-calendar .package-booking-frame .package-detail-popover.is-flipped {
   transform-origin: right center;
 }
 /* Hero food photo. id-scoped so any broad `img` rule from the vendored clone
    sheet can't stretch it. */
-.events-calendar #eventCalendarModal .package-detail-photo {
+.events-calendar .package-booking-frame .package-detail-photo {
   display: block;
   width: 100%;
   height: 150px;
@@ -578,7 +587,7 @@ body {
   color: #3d3528;
 }
 /* id-scoped so the vendored clone sheet's broad img rule can't stretch it. */
-.events-calendar #eventCalendarModal .package-detail-dish-thumb {
+.events-calendar .package-booking-frame .package-detail-dish-thumb {
   width: 38px;
   height: 38px;
   flex: 0 0 auto;
@@ -605,7 +614,7 @@ body {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .events-calendar #eventCalendarModal .package-detail-popover {
+  .events-calendar .package-booking-frame .package-detail-popover {
     animation: none;
   }
 }

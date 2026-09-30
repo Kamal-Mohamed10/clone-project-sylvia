@@ -51,9 +51,24 @@ describe("ReservationSchema", () => {
     ["bad email", { email: "nope" }],
     ["short name", { guestName: "J" }],
     ["bad date format", { reservationDate: "10/31/2026" }],
-    ["missing eventId", { eventId: "" }],
   ])("rejects %s", (_label, override) => {
     const r = ReservationSchema.safeParse({ ...base, ...override });
     expect(r.success).toBe(false);
+  });
+
+  // A standalone large-party/catering booking (e.g. from /cater) has no
+  // calendar event attached — eventId is optional, and absent/empty input
+  // normalizes to null rather than being rejected.
+  it("allows a missing eventId (standalone booking, not tied to an event)", () => {
+    const { eventId: _eventId, ...withoutEventId } = base;
+    const r = ReservationSchema.safeParse(withoutEventId);
+    expect(r.success).toBe(true);
+    expect(r.success && r.data.eventId).toBeNull();
+  });
+
+  it("normalizes an empty-string eventId to null", () => {
+    const r = ReservationSchema.safeParse({ ...base, eventId: "" });
+    expect(r.success).toBe(true);
+    expect(r.success && r.data.eventId).toBeNull();
   });
 });

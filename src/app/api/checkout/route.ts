@@ -57,10 +57,13 @@ export async function POST(request: Request): Promise<Response> {
     return json({ success: false, error: "That menu isn't available." }, 400);
   }
 
-  const event = await getEventById(data.eventId);
-  if (!event) {
+  // Absent eventId means a standalone large-party/catering booking (e.g. from
+  // /cater), not tied to a calendar event — only validate it when given.
+  const event = data.eventId ? await getEventById(data.eventId) : null;
+  if (data.eventId && !event) {
     return json({ success: false, error: "That event could not be found." }, 404);
   }
+  const bookingLabel = event?.title ?? "Large Party / Catering Booking";
 
   const deposit = depositCents(found.menu.pricePerPerson, data.partySize);
 
@@ -79,7 +82,7 @@ export async function POST(request: Request): Promise<Response> {
             unit_amount: deposit,
             product_data: {
               name: `${Math.round(DEPOSIT_RATE * 100)}% deposit — ${found.menu.name}`,
-              description: `Party of ${data.partySize} · ${event.title}`,
+              description: `Party of ${data.partySize} · ${bookingLabel}`,
             },
           },
         },

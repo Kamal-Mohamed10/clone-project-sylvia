@@ -8,7 +8,14 @@ export const MAX_PARTY_SIZE = 200;
  * FormData submission, so we coerce/trim and normalize before validating.
  */
 export const ReservationSchema = z.object({
-  eventId: z.string().min(1, "Missing event."),
+  // Absent for a standalone large-party/catering booking (no calendar event) —
+  // present when RSVPing to a specific event from the events calendar.
+  eventId: z
+    .string()
+    .trim()
+    .optional()
+    .nullable()
+    .transform((v) => (v ? v : null)),
   guestName: z
     .string()
     .trim()

@@ -35,6 +35,13 @@ function messageText(parts: { type: string }[]): string {
     .join("");
 }
 
+// The chat bubble is plain text (no markdown/link rendering), so a "/cater"
+// mention in a reply isn't clickable on its own — surface it as a real link
+// card instead, the same way a cited dish gets one.
+function mentionsCateringLink(text: string): boolean {
+  return /\/cater(?:[\s.,)]|$)/.test(text);
+}
+
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -116,6 +123,7 @@ export default function ChatWidget() {
                 // Only card dishes that have a photo — every shown card has a pic + link.
                 const cited =
                   m.role === "assistant" ? findCitedMenuItems(text).filter((i) => i.image) : [];
+                const showCateringCta = m.role === "assistant" && mentionsCateringLink(text);
                 return (
                   <div key={m.id} className="sc-msg">
                     <div className={`sc-row sc-${m.role}`}>
@@ -144,6 +152,16 @@ export default function ChatWidget() {
                           </Link>
                         ))}
                       </div>
+                    )}
+                    {showCateringCta && (
+                      // Same client-side-nav reasoning as the dish cards above.
+                      <Link
+                        className="sc-cta"
+                        href="/cater"
+                        title="View catering & large-party packages"
+                      >
+                        View Catering &amp; Large-Party Menu →
+                      </Link>
                     )}
                   </div>
                 );
@@ -364,6 +382,17 @@ const scopedCss = `
 #sylvias-concierge .sc-card-noimg { display: flex; align-items: center; justify-content: center; font-size: 28px; }
 #sylvias-concierge .sc-card-name { display: block; font-size: 12px; line-height: 1.3; padding: 6px 8px 0; font-weight: 600; }
 #sylvias-concierge .sc-card-price { display: block; font-size: 12px; color: ${PURPLE}; font-weight: 700; padding: 2px 8px 8px; }
+
+/* Link card under a reply that points the guest to a real page (e.g. /cater) —
+   plain chat text can't be clicked, so a reply mentioning one gets this. */
+#sylvias-concierge .sc-cta {
+  display: inline-block; align-self: flex-start; margin-top: 2px;
+  padding: 9px 14px; border: 1px solid ${PURPLE}; border-radius: 10px;
+  background: #fff; color: ${PURPLE}; text-decoration: none;
+  font-size: 13px; font-weight: 700;
+  transition: background .15s ease, color .15s ease;
+}
+#sylvias-concierge .sc-cta:hover { background: ${PURPLE}; color: #fff; }
 #sylvias-concierge .sc-bubble {
   max-width: 82%; padding: 10px 13px; border-radius: 14px;
   font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word;
