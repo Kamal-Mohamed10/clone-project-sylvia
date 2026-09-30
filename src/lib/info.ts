@@ -33,12 +33,14 @@ export const RESTAURANT = {
     "Live Gospel Brunch every Sunday, 12:30–4:00 PM, with rotating performers.",
 } as const;
 
-/** External services the concierge hands off to (it can't complete these itself). */
+/** Hand-off links the concierge shares (it can't complete these tasks itself) —
+ *  a mix of in-app pages (/cater, /drinks) and external services. */
 export const LINKS = {
   reservationsFallback: "https://resy.com/cities/new-york-ny/venues/sylvias-restaurant",
   orderOnline: "https://direct.chownow.com/order/22566/locations/32842",
   giftCards: "https://www.toasttab.com/sylvias-restaurant/giftcards",
   catering: "/cater",
+  drinkMenu: "/drinks",
   privateParties: "https://sylviasrestaurant.com/parties",
   jobs: "https://sylviasrestaurant.isolvedhire.com/jobs/",
 } as const;

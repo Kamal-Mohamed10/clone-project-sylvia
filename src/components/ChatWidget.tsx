@@ -35,11 +35,18 @@ function messageText(parts: { type: string }[]): string {
     .join("");
 }
 
-// The chat bubble is plain text (no markdown/link rendering), so a "/cater"
-// mention in a reply isn't clickable on its own — surface it as a real link
-// card instead, the same way a cited dish gets one.
-function mentionsCateringLink(text: string): boolean {
-  return /\/cater(?:[\s.,)]|$)/.test(text);
+// The chat bubble is plain text (no markdown/link rendering), so a page-link
+// mention in a reply (e.g. "/cater") isn't clickable on its own — surface it
+// as a real link card instead, the same way a cited dish gets one.
+const PAGE_LINKS = [
+  { path: "/cater", label: "View Catering & Large-Party Menu →" },
+  { path: "/drinks", label: "View Full Drink Menu →" },
+];
+
+function findMentionedPageLinks(text: string): typeof PAGE_LINKS {
+  return PAGE_LINKS.filter((p) =>
+    new RegExp(`\\${p.path}(?:[\\s.,)]|$)`).test(text),
+  );
 }
 
 export default function ChatWidget() {
@@ -123,7 +130,8 @@ export default function ChatWidget() {
                 // Only card dishes that have a photo — every shown card has a pic + link.
                 const cited =
                   m.role === "assistant" ? findCitedMenuItems(text).filter((i) => i.image) : [];
-                const showCateringCta = m.role === "assistant" && mentionsCateringLink(text);
+                const mentionedLinks =
+                  m.role === "assistant" ? findMentionedPageLinks(text) : [];
                 return (
                   <div key={m.id} className="sc-msg">
                     <div className={`sc-row sc-${m.role}`}>
@@ -153,16 +161,12 @@ export default function ChatWidget() {
                         ))}
                       </div>
                     )}
-                    {showCateringCta && (
+                    {mentionedLinks.map((link) => (
                       // Same client-side-nav reasoning as the dish cards above.
-                      <Link
-                        className="sc-cta"
-                        href="/cater"
-                        title="View catering & large-party packages"
-                      >
-                        View Catering &amp; Large-Party Menu →
+                      <Link key={link.path} className="sc-cta" href={link.path}>
+                        {link.label}
                       </Link>
-                    )}
+                    ))}
                   </div>
                 );
               })
