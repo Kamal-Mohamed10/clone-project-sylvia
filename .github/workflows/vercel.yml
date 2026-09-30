@@ -1,13 +1,12 @@
 name: Vercel Deploy
 
-# Production deploy on push to main; preview deploy on pull requests.
+# Manual only for now: this repo has no VERCEL_TOKEN secret set (needs repo admin
+# to add one, see comment below), so the old push/pull_request triggers just failed
+# on every merge and PR. Re-add those triggers once the secret exists.
 # Requires one repo secret: VERCEL_TOKEN (Vercel → Account → Tokens).
 # The org/project IDs below are not secret (they identify the project, not credentials).
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_dispatch: {}
 
 concurrency:
   group: vercel-${{ github.ref }}
