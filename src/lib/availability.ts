@@ -336,3 +336,44 @@ export async function createTableReservation(
     return { ok: true as const, id: inserted.rows[0].id };
   });
 }
+
+export type CancelResult =
+  | { ok: true }
+  | { ok: false; reason: "not_found" };
+
+/**
+ * Cancels a standalone table reservation. Requires the caller to supply the
+ * email or phone the reservation was made under — not just the id, which is a
+ * sequential integer a chat user could guess or iterate — so this can't be
+ * used to cancel a stranger's booking. A mismatch (wrong id, already
+ * cancelled, or identity doesn't match) all return the same "not_found" so a
+ * guess can't be used to probe whether a given id exists.
+ */
+export async function cancelTableReservation(input: {
+  reservationId: number;
+  email?: string;
+  phone?: string;
+}): Promise<CancelResult> {
+  if (!input.email && !input.phone) return { ok: false, reason: "not_found" };
+
+  const conditions = ["id = $1", "status = 'booked'", "reservation_time IS NOT NULL"];
+  const params: (number | string)[] = [input.reservationId];
+  const identity: string[] = [];
+  if (input.email) {
+    params.push(input.email.trim().toLowerCase());
+    identity.push(`lower(email) = $${params.length}`);
+  }
+  if (input.phone) {
+    params.push(input.phone.trim());
+    identity.push(`phone = $${params.length}`);
+  }
+  conditions.push(`(${identity.join(" OR ")})`);
+
+  const rows = await query<{ id: number }>(
+    `UPDATE reservations SET status = 'cancelled'
+      WHERE ${conditions.join(" AND ")}
+      RETURNING id`,
+    params,
+  );
+  return rows.length > 0 ? { ok: true } : { ok: false, reason: "not_found" };
+}

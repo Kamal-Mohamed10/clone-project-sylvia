@@ -13,7 +13,12 @@ import { getSpecials } from "@/lib/specials";
 import { getEvents } from "@/lib/events";
 import { INFO } from "@/lib/info";
 import { SERVICE_TIERS, tiersForPartySize } from "@/lib/packages";
-import { checkAvailability, createTableReservation, findReservations } from "@/lib/availability";
+import {
+  cancelTableReservation,
+  checkAvailability,
+  createTableReservation,
+  findReservations,
+} from "@/lib/availability";
 import { TableReservationSchema } from "@/lib/validators";
 
 // The tool loop and DB calls need Node; never statically cache this endpoint.
@@ -151,6 +156,23 @@ const tools = {
         };
       }
       return { ok: false, reason: result.reason, seatsRemaining: result.seatsRemaining };
+    },
+  }),
+
+  cancel_reservation: tool({
+    description:
+      "Cancel a standalone table reservation. Call check_reservation first to find the reservationId and confirm the details with the guest — call this ONLY after they explicitly confirm. Requires the email or phone the reservation was made under (not just the id) so a guessed id can't cancel someone else's booking.",
+    inputSchema: z.object({
+      reservationId: z.number().int().describe("The id returned by check_reservation."),
+      email: z.string().optional().describe("Email the reservation was made under."),
+      phone: z.string().optional().describe("Phone number the reservation was made under."),
+    }),
+    execute: async ({ reservationId, email, phone }) => {
+      if (!email && !phone) {
+        return { ok: false, error: "Ask the guest for the email or phone the reservation was made under." };
+      }
+      const result = await cancelTableReservation({ reservationId, email, phone });
+      return result;
     },
   }),
 
