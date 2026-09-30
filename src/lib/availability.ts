@@ -200,7 +200,10 @@ export async function findReservations(input: {
   const conditions = ["reservation_time IS NOT NULL"];
   const params: string[] = [];
   if (input.name) {
-    params.push(`%${input.name.trim()}%`);
+    // Escape LIKE metacharacters so a guest's own input can't widen the match
+    // pattern (e.g. a bare "%" or "_" would otherwise match every/any name).
+    const escaped = input.name.trim().replace(/[\\%_]/g, "\\$&");
+    params.push(`%${escaped}%`);
     conditions.push(`guest_name ILIKE $${params.length}`);
   }
   if (input.email) {
