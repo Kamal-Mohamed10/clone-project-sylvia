@@ -402,6 +402,7 @@ export function PackageBookingForm({
                   required
                   autoComplete="name"
                   placeholder="Jordan Rivera"
+                  defaultValue={eventId ? "Jordan Rivera" : undefined}
                 />
                 {fieldError("guestName") && (
                   <p className="reservation-error">{fieldError("guestName")}</p>
@@ -420,6 +421,7 @@ export function PackageBookingForm({
                     required
                     autoComplete="email"
                     placeholder="you@email.com"
+                    defaultValue={eventId ? "jordan.rivera@example.com" : undefined}
                   />
                   {fieldError("email") && (
                     <p className="reservation-error">{fieldError("email")}</p>
@@ -435,6 +437,7 @@ export function PackageBookingForm({
                     type="tel"
                     autoComplete="tel"
                     placeholder="(212) 555-0100"
+                    defaultValue={eventId ? "(212) 555-0100" : undefined}
                   />
                 </div>
               </div>
@@ -448,6 +451,7 @@ export function PackageBookingForm({
                   name="notes"
                   rows={2}
                   placeholder="Allergies, seating, a birthday to celebrate…"
+                  defaultValue={eventId ? "Window seat if possible." : undefined}
                 />
               </div>
 
