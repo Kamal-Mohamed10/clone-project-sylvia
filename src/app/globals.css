@@ -350,6 +350,60 @@ body {
   text-decoration: underline;
 }
 
+/* Demo helper — test-mode card/bank values a presenter can copy instead of
+   typing them into Stripe's iframe-isolated Checkout fields. */
+.demo-payment-helper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border: 1px solid #e4dcc9;
+  border-radius: 8px;
+  background: #faf6ec;
+}
+.demo-payment-helper-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8a7c5c;
+}
+.demo-payment-helper-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.demo-payment-helper-number {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 15px;
+  font-weight: 600;
+  color: #2d2440;
+}
+.demo-payment-helper-copy {
+  border: 1px solid #d8cda8;
+  border-radius: 6px;
+  background: #fff;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8a7c5c;
+  cursor: pointer;
+}
+.demo-payment-helper-copy:hover {
+  border-color: #b8892b;
+  color: #b8892b;
+}
+.demo-payment-helper-meta {
+  font-size: 12px;
+  color: #6b5a3a;
+}
+.demo-payment-helper-bank {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #6b5a3a;
+}
+
 /* Group-package panel — revealed in the reservation form once the party size
    reaches the smallest catering tier (11+). A fixed-height scroll area keeps
    the (potentially long) list from stretching the modal. */
