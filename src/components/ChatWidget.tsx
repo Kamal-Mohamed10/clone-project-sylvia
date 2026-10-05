@@ -53,13 +53,21 @@ function findMentionedPageLinks(text: string): typeof PAGE_LINKS {
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
-  const { messages, sendMessage, status } = useChat();
+  const { messages, sendMessage, status, stop, setMessages } = useChat();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const busy = status === "submitted" || status === "streaming";
   const lastIsUser = messages[messages.length - 1]?.role === "user";
   const showTyping = busy && lastIsUser;
+
+  // Demo convenience: wipe the conversation back to the empty state (and its
+  // starter suggestion chips) without reloading the whole page.
+  function resetChat() {
+    stop();
+    setMessages([]);
+    setInput("");
+  }
 
   // Keep the latest message in view as content streams in.
   useEffect(() => {
@@ -86,6 +94,16 @@ export default function ChatWidget() {
 
       {open && (
         <section className="sc-panel" role="dialog" aria-label="Sylvia's Concierge chat">
+          <button
+            type="button"
+            className="sc-reload"
+            aria-label="Restart conversation"
+            title="Restart conversation"
+            onClick={resetChat}
+          >
+            ⟳
+          </button>
+
           <button
             type="button"
             className="sc-close"
@@ -363,6 +381,14 @@ const scopedCss = `
   background: rgba(255,255,255,.75); backdrop-filter: blur(3px);
 }
 #sylvias-concierge .sc-close:hover { background: rgba(240,240,240,.95); }
+/* Same floating style as .sc-close, one slot to its left. */
+#sylvias-concierge .sc-reload {
+  position: absolute; top: 8px; right: 50px; z-index: 5;
+  width: 38px; height: 38px; border-radius: 50%; border: none; cursor: pointer;
+  font-size: 18px; line-height: 38px; color: ${INK};
+  background: rgba(255,255,255,.75); backdrop-filter: blur(3px);
+}
+#sylvias-concierge .sc-reload:hover { background: rgba(240,240,240,.95); }
 /* Sits outside .sc-messages so it stays put while messages scroll under it. */
 #sylvias-concierge .sc-heading {
   flex: 0 0 auto;
