@@ -351,24 +351,43 @@ body {
 }
 
 /* Demo helper — test-mode card/bank values a presenter can copy instead of
-   typing them into Stripe's iframe-isolated Checkout fields. Sticky, because
-   it shares a scroll container with the embedded Checkout iframe below it:
-   once that iframe grows (selecting a payment method, etc.) a plain scroll
-   can push this below the fold with no way back — the iframe's own content
-   captures the wheel/scroll gesture before it reaches the outer column. */
+   typing them into Stripe's iframe-isolated Checkout fields. Portaled to
+   <body> and fixed-positioned as a sidebar next to the reservation modal
+   (.event-calendar-modal-dialog is z-index 1050, see vendor/sylvias.css) —
+   sitting outside the dialog means it never covers it and never shares a
+   scroll container with the embedded Checkout iframe. On narrow viewports
+   there's no room beside the dialog, so it docks to the bottom instead. */
 .demo-payment-helper {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  margin: 0 0 10px;
+  position: fixed;
+  z-index: 1060;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  width: min(92vw, 360px);
+  max-height: 40vh;
+  overflow-y: auto;
   padding: 10px 12px;
   border: 1px solid #e4dcc9;
   border-radius: 8px;
   background: #faf6ec;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+/* The dialog maxes out at 1000px + 40px overlay padding; this breakpoint
+   leaves a comfortable margin above that before trying to dock a 260px
+   sidebar beside it, so the two never fight for the same space. */
+@media (min-width: 1300px) {
+  .demo-payment-helper {
+    left: auto;
+    right: 16px;
+    top: 50%;
+    bottom: auto;
+    transform: translateY(-50%);
+    width: 260px;
+    max-height: 80vh;
+  }
 }
 .demo-payment-helper-label {
   font-size: 11px;
@@ -377,18 +396,31 @@ body {
   letter-spacing: 0.04em;
   color: #8a7c5c;
 }
-.demo-payment-helper-card {
+.demo-payment-helper-fields {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 4px;
 }
-.demo-payment-helper-number {
+.demo-payment-helper-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+}
+.demo-payment-helper-field-label {
+  flex: 1 1 100%;
+  font-size: 11px;
+  color: #6b5a3a;
+}
+.demo-payment-helper-field-value {
+  flex: 1 1 auto;
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: #2d2440;
 }
 .demo-payment-helper-copy {
+  flex: 0 0 auto;
   border: 1px solid #d8cda8;
   border-radius: 6px;
   background: #fff;
@@ -402,11 +434,13 @@ body {
   border-color: #b8892b;
   color: #b8892b;
 }
-.demo-payment-helper-meta {
-  font-size: 12px;
-  color: #6b5a3a;
-}
-.demo-payment-helper-bank {
+/* Specificity note: this panel now portals to <body>, which on /events
+   carries the page's `events-container` class — so the vendored
+   `.events-container p { color: #fff }` rule (0,1,1) would otherwise win
+   over a plain `.demo-payment-helper-bank` (0,1,0) and render this
+   invisible (white-on-cream). Qualifying with the parent class (0,2,0)
+   outranks it. */
+.demo-payment-helper .demo-payment-helper-bank {
   margin: 4px 0 0;
   font-size: 12px;
   color: #6b5a3a;
