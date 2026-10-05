@@ -351,16 +351,24 @@ body {
 }
 
 /* Demo helper — test-mode card/bank values a presenter can copy instead of
-   typing them into Stripe's iframe-isolated Checkout fields. */
+   typing them into Stripe's iframe-isolated Checkout fields. Sticky, because
+   it shares a scroll container with the embedded Checkout iframe below it:
+   once that iframe grows (selecting a payment method, etc.) a plain scroll
+   can push this below the fold with no way back — the iframe's own content
+   captures the wheel/scroll gesture before it reaches the outer column. */
 .demo-payment-helper {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
   margin: 0 0 10px;
   padding: 10px 12px;
   border: 1px solid #e4dcc9;
   border-radius: 8px;
   background: #faf6ec;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 .demo-payment-helper-label {
   font-size: 11px;
